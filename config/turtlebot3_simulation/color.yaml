@@ -1,0 +1,20 @@
+%YAML:1.0
+---
+model_type: PINHOLE
+camera_name: camera
+image_width: 1920
+image_height: 1080
+distortion_parameters:
+   k1: 0
+   k2: 0
+   p1: 0
+   p2: 0
+projection_parameters:
+   fx: 1206.8897719532354
+   fy: 1206.8897719532354
+   cx: 960.5 
+   cy: 540.5 
+
+# d = [k1 k2 p1 p2 k3]
+# k = [fx s cx 0 fy cy 0 0 1]
+# p = k * [r|t] 

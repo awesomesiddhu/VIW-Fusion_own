@@ -1,0 +1,45 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/home/siddharth/dmvio_ros_ws/devel/include/**",
+        "/home/siddharth/catkin_workspace/devel/include/**",
+        "/opt/ros/noetic/include/**",
+        "/home/siddharth/catkin_workspace/src/beginner_tutorials/include/**",
+        "/home/siddharth/viwo_ros_ws/src/VIW-Fusion/camera_models/include/**",
+        "/home/siddharth/mecanum_sim_ws/src/control_mecanum_sim/include/**",
+        "/home/siddharth/catkin_workspace/src/data_collector/include/**",
+        "/home/siddharth/dmvio_ros_ws/src/dm-vio-ros/include/**",
+        "/home/siddharth/mecanum_sim_ws/src/mecanum_4wd_mecanum_gazebo/include/**",
+        "/home/siddharth/catkin_workspace/src/my_msgs/include/**",
+        "/home/siddharth/catkin_workspace/src/realsense_ros_gazebo/include/**",
+        "/home/siddharth/catkin_workspace/src/ros_basics_tutorials/include/**",
+        "/home/siddharth/catkin_workspace/src/ros_essentials_cpp/include/**",
+        "/home/siddharth/catkin_workspace/src/rosserial/rosserial_server/include/**",
+        "/home/siddharth/catkin_workspace/src/rosserial/rosserial_test/include/**",
+        "/home/siddharth/catkin_workspace/src/Robonautica/tortoisebotpromax_navigation/include/**",
+        "/home/siddharth/catkin_workspace/src/Robonautica/tortoisebotpromax_slam/include/**",
+        "/home/siddharth/catkin_workspace/src/turtlebot3_simulations/turtlebot3_fake/include/**",
+        "/home/siddharth/catkin_workspace/src/turtlebot3_simulations/turtlebot3_gazebo/include/**",
+        "/home/siddharth/catkin_workspace/src/turtlebot3/turtlebot3_slam/include/**",
+        "/home/siddharth/catkin_workspace/src/Robonautica/turtlebot3node/include/**",
+        "/home/siddharth/catkin_workspace/src/uuv_simulator/uuv_gazebo_plugins/uuv_gazebo_plugins/include/**",
+        "/home/siddharth/catkin_workspace/src/uuv_simulator/uuv_gazebo_plugins/uuv_gazebo_ros_plugins/include/**",
+        "/home/siddharth/catkin_workspace/src/uuv_simulator/uuv_sensor_plugins/uuv_sensor_ros_plugins/include/**",
+        "/home/siddharth/catkin_workspace/src/uuv_simulator/uuv_world_plugins/uuv_world_plugins/include/**",
+        "/home/siddharth/catkin_workspace/src/uuv_simulator/uuv_world_plugins/uuv_world_ros_plugins/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
+  ],
+  "version": 4
+}
