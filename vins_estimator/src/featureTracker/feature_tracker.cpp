@@ -565,7 +565,29 @@ void FeatureTracker::readIntrinsicParameter(const vector<string> &calib_file)
     if (calib_file.size() == 2)
         stereo_cam = 1;
 }
+/*
+std::vector<vector<double>> FeatureTracker::read_andreturn_IntrinsicParameter(const vector<string> &calib_file)
+{
+    std::vector<double> intrinsics;
+    std::vector<vector<double>> final_intrinsics;
+    for (size_t i = 0; i < calib_file.size(); i++)
+    {
+        ROS_INFO("reading paramerter of camera %s", calib_file[i].c_str());
+        camodocal::CameraPtr camera = CameraFactory::instance()->generateCameraFromYamlFile(calib_file[i]);
+        m_camera.push_back(camera);
+        cam_params = camera->getParameters;
+        intrinsics.push_back(cam_params.fx);
+        intrinsics.push_back(cam_params.fy);
+        intrinsics.push_back(cam_params.cx);
+        intrinsics.push_back(cam_params.cy);
+        final_intrinsics.push_back(intrinsics);
+    }
+    if (calib_file.size() == 2)
+        stereo_cam = 1;
 
+    return final_intrinsics;
+}
+*/
 void FeatureTracker::showUndistortion(const string &name)
 {
     cv::Mat undistortedImg(row + 600, col + 600, CV_8UC1, cv::Scalar(0));

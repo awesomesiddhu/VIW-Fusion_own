@@ -877,5 +877,5 @@ PinholeCamera::parametersToString(void) const
 
     return oss.str();
 }
-
 }
+

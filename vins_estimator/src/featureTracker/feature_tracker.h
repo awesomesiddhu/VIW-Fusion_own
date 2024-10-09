@@ -41,6 +41,7 @@ public:
     map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> trackFeature(double _cur_time, const vector<cv::Point2f>& _features0, const vector<cv::Point2f>& _features1 = vector<cv::Point2f>());
     void setMask();
     void readIntrinsicParameter(const vector<string> &calib_file);
+    //std::vector<vector<double>> FeatureTracker::read_andreturn_IntrinsicParameter(const vector<string> &calib_file);
     void showUndistortion(const string &name);
     void rejectWithF();
     void undistortedPoints();

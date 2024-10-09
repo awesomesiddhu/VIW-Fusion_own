@@ -11,6 +11,9 @@
 #include "../utility/visualization.h"
 #include "../factor/pose_subset_parameterization.h"
 #include "../factor/orientation_subset_parameterization.h"
+#include "vp_detector.h"
+// vector<camodocal::CameraPtr> m_camera;
+std::vector<double> van_point(2);
 
 Estimator::Estimator(): f_manager{Rs}
 {
@@ -216,8 +219,15 @@ void Estimator::inputImage(double t, const cv::Mat &_img, const cv::Mat &_img1)
     map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> featureFrame;
     TicToc featureTrackerTime;
 
-    if(_img1.empty())
+    if(_img1.empty()){
         featureFrame = featureTracker.trackImage(t, _img);
+        if(USE_VP){
+           printf("vp detector running \n");
+           printf("Before vp_detector function: %f %f \n", van_point[0],van_point[1]);
+           van_point = vp_detector(_img);
+           printf("After vp_detector function: %f %f \n", van_point[0],van_point[1]);
+        }
+    }
     else
         featureFrame = featureTracker.trackImage(t, _img, _img1);
     //printf("featureTracker time: %f\n", featureTrackerTime.toc());
@@ -1582,6 +1592,25 @@ void Estimator::optimization()
         }
     }
 
+    if(USE_VP && van_point[0] && van_point[1]) //Vanishing Point
+    {
+        // double fx,fy,cx,cy,x,y;
+        
+        for (int i = 0; i < frame_count; i++)
+        {
+            std::vector<vector<double>> final_intrinsics;
+            printf("adding vp residual block");
+            printf("Residual block : %f %f \n", van_point[0],van_point[1]);
+            VanishingPointFactor* vp_factor = new VanishingPointFactor(van_point[0],van_point[1],FX,FY,CX,CY);
+                
+        for (int j = 0; j < 7; ++j) {
+            printf("%f ", para_Ex_Pose[0][j]);
+        printf("\n"); // Move to the next line after each row
+        }
+            problem.AddResidualBlock(vp_factor, NULL, para_Pose[i],para_Ex_Pose[0]);
+        }
+    }
+
     int f_m_cnt = 0;
     int feature_index = -1;
     for (auto &it_per_id : f_manager.feature)
@@ -1722,6 +1751,16 @@ void Estimator::optimization()
                                                                            vector<int>{0});//边缘化 para_Pose[0]
             marginalization_info->addResidualBlockInfo(residual_block_info);
         }
+    
+        if(USE_VP && van_point[0] && van_point[1])
+        {
+            VanishingPointFactor* vp_factor = new VanishingPointFactor(van_point[0],van_point[1],FX,FY,CX,CY);
+            ResidualBlockInfo *residual_block_info = new ResidualBlockInfo(vp_factor, NULL,
+                                                                           vector<double *>{para_Pose[0],para_Ex_Pose[0]},
+                                                                           vector<int>{0});//边缘化 para_Pose[0]
+            printf("adding vp marginalization info");
+            marginalization_info->addResidualBlockInfo(residual_block_info);
+        } 
 
         //图像部分，基于与第0帧相关的图像残差，边缘化第一次观测的图像帧为第0帧的路标点和第0帧
         {

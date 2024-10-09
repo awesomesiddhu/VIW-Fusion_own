@@ -80,8 +80,11 @@ extern int STEREO;
 extern int USE_IMU;
 extern int USE_WHEEL;
 extern int USE_PLANE;
+extern int USE_VP;
 extern int ONLY_INITIAL_WITH_WHEEL;
 extern int MULTIPLE_THREAD;
+extern double FX,FY,CX,CY;
+
 // pts_gt for debug purpose;
 extern map<int, Eigen::Vector3d> pts_gt;
 

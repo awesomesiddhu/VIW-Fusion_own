@@ -1,0 +1,16 @@
+%YAML:1.0
+---
+model_type: PINHOLE
+camera_name: camera
+image_width: 640  # Updated width based on new specifications
+image_height: 480  # Updated height based on new specifications
+distortion_parameters:
+   k1: 0.0  # No radial distortion
+   k2: 0.0  # No radial distortion
+   p1: 0.0  # No tangential distortion
+   p2: 0.0  # No tangential distortion
+projection_parameters:
+   fx: 554.254691191187  # Updated focal length in x direction
+   fy: 554.254691191187  # Updated focal length in y direction
+   cx: 320.5  # Updated principal point x coordinate
+   cy: 240.5  # Updated principal point y coordinate

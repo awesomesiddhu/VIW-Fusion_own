@@ -63,8 +63,10 @@ int STEREO;
 int USE_IMU;
 int USE_WHEEL;
 int USE_PLANE;
+int USE_VP;
 int ONLY_INITIAL_WITH_WHEEL;
 int MULTIPLE_THREAD;
+double FX,FY,CX,CY;
 map<int, Eigen::Vector3d> pts_gt;
 std::string IMAGE0_TOPIC, IMAGE1_TOPIC;
 std::string FEATURE0_TOPIC, FEATURE1_TOPIC;
@@ -137,6 +139,18 @@ void readParameters(std::string config_file)
 
     USE_PLANE = fsSettings["plane"];
     printf("USE_PLANE: %d\n", USE_PLANE);
+
+    USE_VP = fsSettings["vanpoint"];
+    printf("USE_VP: %d\n", USE_VP);
+
+    FX = fsSettings["fx"];
+    printf("FX: %f\n", FX);
+    FY = fsSettings["fy"];
+    printf("FY: %f\n", FY);
+    CX = fsSettings["cx"];
+    printf("CX: %f\n", CX);
+    CY = fsSettings["cy"];
+    printf("CY: %f\n", CY);
 
     if(USE_IMU)
     {
