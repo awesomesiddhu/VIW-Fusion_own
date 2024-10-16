@@ -13,6 +13,7 @@ double INIT_DEPTH;
 double MIN_PARALLAX;
 double ACC_N, ACC_W;
 double GYR_N, GYR_W;
+//UV double FOCAL_LENGTH;
 
 double VEL_N_wheel;
 double GYR_N_wheel;
@@ -56,6 +57,7 @@ std::string IMU_TOPIC;
 std::string WHEEL_TOPIC;
 int ROW, COL;
 double TD;
+//UV double TR;
 double OFFSET_SIM = 0.0;
 double TD_WHEEL;
 int NUM_OF_CAM;
@@ -64,6 +66,12 @@ int USE_IMU;
 int USE_WHEEL;
 int USE_PLANE;
 int USE_VP;
+
+int LINE_WINDOW;
+int LINE_ONLY;
+double LINE_FACTOR;
+double VP_FACTOR;
+
 int ONLY_INITIAL_WITH_WHEEL;
 int MULTIPLE_THREAD;
 double FX,FY,CX,CY;
@@ -442,5 +450,9 @@ void readParameters(std::string config_file)
         printf("no wheel, fix extrinsic and intrinsic param; no time offset calibration\n");
     }
 
+    LINE_WINDOW = fsSettings["line_window"];
+    LINE_FACTOR = fsSettings["line_factor"];
+    VP_FACTOR = fsSettings["vp_factor"];
+    
     fsSettings.release();
 }

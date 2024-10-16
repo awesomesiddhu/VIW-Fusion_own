@@ -38,7 +38,12 @@
 #include "../factor/projectionTwoFrameTwoCamFactor.h"
 #include "../factor/projectionOneFrameTwoCamFactor.h"
 #include "../featureTracker/feature_tracker.h"
-#include "../factor/vanishing_factor.h"
+//VP #include "../factor/vanishing_factor.h"
+
+#include "../factor/line_projection_factor.h"
+#include "../factor/vp_projection_factor.h"
+
+#include "../featureTracker/line_feature_tracker.h"
 
 class Estimator
 {
@@ -58,7 +63,7 @@ class Estimator
     void processIMU(double t, double dt, const Vector3d &linear_acceleration, const Vector3d &angular_velocity);
     void processWheel(double t, double dt, const Vector3d &linear_velocity, const Vector3d &angular_velocity);
     void integrateWheelPreintegration( double t, Eigen::Vector3d& P, Eigen::Quaterniond& Q, const Eigen::Matrix<double, 7, 1>& pose);
-    void processImage(const map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> &image, const double header);
+    void processImage(const map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> &image, const map<int, vector<Eigen::Matrix<double, 15, 1>>> &image_line, const double header); 
     void processMeasurements();
     void changeSensorType(int use_imu, int use_stereo);
 
@@ -67,6 +72,7 @@ class Estimator
     bool initialStructure();
     bool visualInitialAlign();
     bool relativePose(Matrix3d &relative_R, Vector3d &relative_T, int &l);
+    bool relativePoseForLine(Matrix3d &relative_R, Vector3d &relative_T, int &l);
     void slideWindow();
     void slideWindowNew();
     void slideWindowOld();
@@ -116,7 +122,7 @@ class Estimator
     queue<pair<double, Eigen::Vector3d>> wheelVelBuf;
     queue<pair<double, Eigen::Vector3d>> gyrBuf;
     queue<pair<double, Eigen::Vector3d>> wheelGyrBuf;
-    queue<pair<double, map<int, vector<pair<int, Eigen::Matrix<double, 7, 1> > > > > > featureBuf;
+    queue<std::tuple<double, map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>>, map<int, vector<pair<int, Eigen::Matrix<double, 15, 1>>>>>> featureBuf;
     queue<pair<double, Eigen::Matrix<double,7,1>>> groundtruthBuf;
     double prevTime, curTime;
     double prevTime_wheel, curTime_wheel;
@@ -128,10 +134,13 @@ class Estimator
     std::thread processThread;
 
     FeatureTracker featureTracker;
+    LineFeatureTracker lineTrackerData;
 
     SolverFlag solver_flag;
     MarginalizationFlag  marginalization_flag;
     Vector3d g;
+    /* UV MatrixXd Ap[2], backup_A;
+    VectorXd bp[2], backup_b; */
 
     Matrix3d ric[2]; //存储双目与imu之间的外参 ric[0] = R_i_cl; ric[1] = R_i_cr;
     Vector3d tic[2]; //tic[0] = t_i_cl; tic[1] = t_i_cr;
@@ -202,6 +211,7 @@ class Estimator
     double para_Td[1][1];
     double para_Td_wheel[1][1];
     double para_Tr[1][1];
+    double para_Ortho_plucker[NUM_OF_LF][SIZE_LINE_FEATURE];
 
     int loop_window_index;
 
@@ -226,4 +236,6 @@ class Estimator
 
     bool initFirstPoseFlag; //标记位姿是否初始化
     bool initThreadFlag;
+
+    cv::Mat latest_img;
 };

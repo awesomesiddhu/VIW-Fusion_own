@@ -21,7 +21,17 @@
 #include "estimator/parameters.h"
 #include "utility/visualization.h"
 
+#include <condition_variable>
+#include <message_filters/subscriber.h>
+#include <message_filters/time_synchronizer.h>
+#include <nav_msgs/Path.h>
+#include <geometry_msgs/PoseArray.h>
+
 Estimator estimator;
+/* UV 
+std::condition_variable con;
+double current_time = -1;
+*/
 
 queue<sensor_msgs::ImuConstPtr> imu_buf;
 queue<sensor_msgs::PointCloudConstPtr> feature_buf;
@@ -234,6 +244,14 @@ void cam_switch_callback(const std_msgs::BoolConstPtr &switch_msg)
     return;
 }
 
+void latest_callback(const sensor_msgs::ImagePtr &img_msg)
+{
+    m_buf.lock();
+    cv_bridge::CvImagePtr ptr = cv_bridge::toCvCopy(img_msg, sensor_msgs::image_encodings::MONO8);
+    estimator.latest_img = ptr->image;
+    m_buf.unlock();
+}
+
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "vins_estimator");
@@ -270,6 +288,7 @@ int main(int argc, char **argv)
     ros::Subscriber sub_restart = n.subscribe("/vins_restart", 100, restart_callback);
     ros::Subscriber sub_imu_switch = n.subscribe("/vins_imu_switch", 100, imu_switch_callback);
     ros::Subscriber sub_cam_switch = n.subscribe("/vins_cam_switch", 100, cam_switch_callback);
+    ros::Subscriber sub_latest_img = n.subscribe("/feature_tracker/latest_img", 2000, latest_callback);
 
     std::thread sync_thread{sync_process};
     ros::spin();

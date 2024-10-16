@@ -8,5 +8,15 @@
         "/home/siddharth/dmvio_ros_ws/devel/lib/python3/dist-packages",
         "/home/siddharth/catkin_workspace/devel/lib/python3/dist-packages",
         "/opt/ros/noetic/lib/python3/dist-packages"
-    ]
+    ],
+    "files.associations": {
+        "queue": "cpp",
+        "mutex": "cpp",
+        "shared_mutex": "cpp",
+        "condition_variable": "cpp",
+        "map": "cpp",
+        "*.tcc": "cpp",
+        "deque": "cpp",
+        "vector": "cpp"
+    }
 }

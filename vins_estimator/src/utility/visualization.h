@@ -41,6 +41,8 @@ extern nav_msgs::Path groundtruth_path;
 extern ros::Publisher pub_pose_graph;
 extern int IMAGE_ROW, IMAGE_COL;
 
+// extern ros::Publisher pub_text;
+
 void registerPub(ros::NodeHandle &n);
 
 void pubLatestOdometry(const Eigen::Vector3d &P, const Eigen::Quaterniond &Q, const Eigen::Vector3d &V, double t);
@@ -68,6 +70,14 @@ void pubCameraPose(const Estimator &estimator, const std_msgs::Header &header);
 void pubPointCloud(const Estimator &estimator, const std_msgs::Header &header);
 
 void pubTF(const Estimator &estimator, const std_msgs::Header &header);
+
+/* UV void pubLineCloud(const Estimator &estimator, std_msgs::Header &header);
+void pubText(const Estimator &estimator, const std_msgs::Header &header);
+void declarePublisher(int num, ros::NodeHandle &n, std::vector<ros::Publisher> &MarkerPublisher);
+void declareLineLists(std_msgs::Header &header, int num, std::vector<visualization_msgs::Marker> &lineList);
+void getHSVColor(float h, float& red, float & green, float & blue);
+void publishAll(std::vector<ros::Publisher>& MarkerPublishers, std::vector<visualization_msgs::Marker>& lineLists);
+*/
 
 void pubKeyframe(const Estimator &estimator);
 

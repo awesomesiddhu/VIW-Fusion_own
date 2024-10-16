@@ -12,8 +12,8 @@
 #include "../factor/pose_subset_parameterization.h"
 #include "../factor/orientation_subset_parameterization.h"
 #include "vp_detector.h"
-// vector<camodocal::CameraPtr> m_camera;
-std::vector<double> van_point(2);
+
+// VP std::vector<double> van_point(2);
 
 Estimator::Estimator(): f_manager{Rs}
 {
@@ -136,6 +136,9 @@ void Estimator::clearState()
 
     failure_occur = 0;
 
+    //UV drift_correct_r = Matrix3d::Identity();
+    //UV drift_correct_t = Vector3d::Zero();
+
     mProcess.unlock();
 }
 
@@ -217,16 +220,31 @@ void Estimator::inputImage(double t, const cv::Mat &_img, const cv::Mat &_img1)
 {
     inputImageCnt++;
     map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> featureFrame;
+    map<int, vector<pair<int, Eigen::Matrix<double, 15, 1>>>> lineFrame;
     TicToc featureTrackerTime;
 
     if(_img1.empty()){
         featureFrame = featureTracker.trackImage(t, _img);
-        if(USE_VP){
+        lineFrame = lineTrackerData.readImage4Line(_img, t);
+
+        for (unsigned int i = 0;; i++)
+        {
+        // cout << "index i" << i << endl;
+            bool completed = false;
+            for (int j = 0; j < NUM_OF_CAM; j++)
+                if (j != 1 || !STEREO_TRACK)
+                    completed |= lineTrackerData.updateID(i);
+            if (!completed){
+                break;
+            }
+        }
+
+        /* VP if(USE_VP){
            printf("vp detector running \n");
            printf("Before vp_detector function: %f %f \n", van_point[0],van_point[1]);
            van_point = vp_detector(_img);
            printf("After vp_detector function: %f %f \n", van_point[0],van_point[1]);
-        }
+        } */
     }
     else
         featureFrame = featureTracker.trackImage(t, _img, _img1);
@@ -243,14 +261,14 @@ void Estimator::inputImage(double t, const cv::Mat &_img, const cv::Mat &_img1)
         if(inputImageCnt % 2 == 0)
         {
             mBuf.lock();
-            featureBuf.push(make_pair(t, featureFrame));
+            featureBuf.push(std::make_tuple(t, featureFrame, lineFrame));
             mBuf.unlock();
         }
     }
     else
     {
         mBuf.lock();
-        featureBuf.push(make_pair(t, featureFrame));
+        featureBuf.push(std::make_tuple(t, featureFrame, lineFrame)); 
         mBuf.unlock();
         TicToc processTime;
         processMeasurements();
@@ -258,6 +276,7 @@ void Estimator::inputImage(double t, const cv::Mat &_img, const cv::Mat &_img1)
     }
     
 }
+/*
 void Estimator::inputFeature(double t, const vector<cv::Point2f>& _features0, const vector<cv::Point2f>& _features1)
 {
     inputImageCnt++;
@@ -281,14 +300,14 @@ void Estimator::inputFeature(double t, const vector<cv::Point2f>& _features0, co
         if(inputImageCnt % 2 == 0)
         {
             mBuf.lock();
-            featureBuf.push(make_pair(t, featureFrame));
+            featureBuf.push({t, featureFrame, lineFrame});
             mBuf.unlock();
         }
     }
     else
     {
         mBuf.lock();
-        featureBuf.push(make_pair(t, featureFrame));
+        featureBuf.push({t, featureFrame, lineFrame});
         mBuf.unlock();
         TicToc processTime;
         processMeasurements();
@@ -305,6 +324,7 @@ void Estimator::inputFeature(double t, const vector<cv::Point2f>& _features0, co
     }
 
 }
+*/
 void Estimator::inputGroundtruth(double t, Eigen::Matrix<double,7,1>& _data)
 {
 
@@ -350,16 +370,15 @@ void Estimator::inputWheel(double t, const Vector3d &linearVelocity, const Vecto
         mWheelPropagate.unlock();
     }
 }
-void Estimator::inputFeature(double t, const map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> &featureFrame)
-{
-    mBuf.lock();
-    featureBuf.push(make_pair(t, featureFrame));
-    mBuf.unlock();
+// void Estimator::inputFeature(double t, const map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> &featureFrame)
+// {
+//     mBuf.lock();
+//     featureBuf.push(make_pair(t, featureFrame));
+//     mBuf.unlock();
 
-    if(!MULTIPLE_THREAD)
-        processMeasurements();
-}
-
+//     if(!MULTIPLE_THREAD)
+//         processMeasurements();
+// }
 
 bool Estimator::getIMUInterval(double t0, double t1, vector<pair<double, Eigen::Vector3d>> &accVector, 
                                 vector<pair<double, Eigen::Vector3d>> &gyrVector)
@@ -452,17 +471,17 @@ void Estimator::processMeasurements()
     {
         //printf("process measurments\n");
         // 时间 特征点ID 图像id xyz_uv_vel
-        pair<double, map<int, vector<pair<int, Eigen::Matrix<double, 7, 1> > > > > feature;
+        std::tuple<double, map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>>, map<int, vector<pair<int, Eigen::Matrix<double, 15, 1>>>>> feature;
         vector<pair<double, Eigen::Vector3d>> accVector, gyrVector;
         vector<pair<double, Eigen::Vector3d>> velWheelVector, gyrWheelVector;
         if(!featureBuf.empty())
         {
             feature = featureBuf.front();
-            curTime = feature.first + td;
+            curTime = std::get<0>(feature) + td;
             curTime_wheel = curTime - td_wheel;
             while(1)
             {
-                if ((!USE_IMU  || IMUAvailable(feature.first + td)))
+                if ((!USE_IMU  || IMUAvailable(std::get<0>(feature) + td)))
                     break;
                 else
                 {
@@ -475,7 +494,7 @@ void Estimator::processMeasurements()
             }
             while(1)
             {
-                if ((!USE_WHEEL  || WheelAvailable(feature.first + td - td_wheel)))
+                if ((!USE_WHEEL  || WheelAvailable(std::get<0>(feature) + td - td_wheel)))
                     break;
                 else
                 {
@@ -533,7 +552,7 @@ void Estimator::processMeasurements()
                 }
             }
             mProcess.lock();
-            processImage(feature.second, feature.first);
+            processImage(std::get<1>(feature), std::get<2>(feature), std::get<0>(feature)); //feature[2] which is imageline
             prevTime = curTime;
             prevTime_wheel = curTime_wheel;
 
@@ -541,7 +560,7 @@ void Estimator::processMeasurements()
 
             std_msgs::Header header;
             header.frame_id = "world";
-            header.stamp = ros::Time(feature.first);
+            header.stamp = ros::Time(std::get<0>(feature));
 
             pubOdometry(*this, header);
             Eigen::Matrix<double, 7, 1> pose;
@@ -697,11 +716,12 @@ void Estimator::integrateWheelPreintegration( double t, Eigen::Vector3d& P, Eige
     P = Pwo;
     Q = Qwo;
 }
-void Estimator::processImage(const map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> &image, const double header)
+void Estimator::processImage(const map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> &image, const map<int, vector<Eigen::Matrix<double, 15, 1>>> &image_line, const double header)
+
 {
     ROS_DEBUG("new image coming ------------------------------------------");
     ROS_DEBUG("Adding feature points %lu", image.size());
-    if (f_manager.addFeatureCheckParallax(frame_count, image, td))
+    if (f_manager.addFeatureCheckParallax(frame_count, image, image_line, td)) 
     {
         marginalization_flag = MARGIN_OLD;
         //printf("keyframe\n");
@@ -718,10 +738,10 @@ void Estimator::processImage(const map<int, vector<pair<int, Eigen::Matrix<doubl
     ROS_DEBUG("number of feature: %d", f_manager.getFeatureCount());
     Headers[frame_count] = header;
 
-    ImageFrame imageframe(image, header);
+    ImageFrame imageframe(image, image_line, header); //UV header.stamp.toSec());
     imageframe.pre_integration = tmp_pre_integration;//tmp_pre_intergration在前面processIMU计算得到
     imageframe.pre_integration_wheel = tmp_wheel_pre_integration;//tmp_wheel_pre_intergration在前面processWheel计算得到
-    all_image_frame.insert(make_pair(header, imageframe));
+    all_image_frame.insert(make_pair(header, imageframe)); //UV header.stamp.toSec()
     tmp_pre_integration = new IntegrationBase{acc_0, gyr_0, Bas[frame_count], Bgs[frame_count]};//重建一个新的，为下一次processIMU做准备
     tmp_wheel_pre_integration = new WheelIntegrationBase{vel_0_wheel, gyr_0_wheel, sx, sy, sw, td_wheel};//重建一个新的，为下一次processWheel做准备
 
@@ -752,15 +772,15 @@ void Estimator::processImage(const map<int, vector<pair<int, Eigen::Matrix<doubl
             if (frame_count == WINDOW_SIZE)
             {
                 bool result = false;
-                if(ESTIMATE_EXTRINSIC != 2 && (header - initial_timestamp) > 0.1)
+                if(ESTIMATE_EXTRINSIC != 2 && (header - initial_timestamp) > 0.1) //UV header.stamp.toSec()
                 {
                     result = initialStructure();
-                    initial_timestamp = header;   
+                    initial_timestamp = header; //UV header.stamp.toSec()
                 }
                 if(result)
                 {
-                    optimization();
-                    updateLatestStates();
+                    optimization(); // = solveOdometry();
+                    updateLatestStates(); 
                     solver_flag = NON_LINEAR;
                     slideWindow();
                     ROS_INFO("Initialization finish!");
@@ -840,6 +860,7 @@ void Estimator::processImage(const map<int, vector<pair<int, Eigen::Matrix<doubl
         if(!USE_IMU) //当不存在imu时，使用pnp方法进行位姿预测;存在imu时使用imu积分进行预测
             f_manager.initFramePoseByPnP(frame_count, Ps, Rs, tic, ric);
         f_manager.triangulate(frame_count, Ps, Rs, tic, ric);
+        f_manager.triangulateLine(Ps, Rs, tic, ric, latest_img); 
         optimization();
         set<int> removeIndex;
         outliersRejection(removeIndex);//基于重投影误差，检测外点
@@ -867,6 +888,7 @@ void Estimator::processImage(const map<int, vector<pair<int, Eigen::Matrix<doubl
 
         slideWindow();
         f_manager.removeFailures();
+        f_manager.removeLineFailures();
         // prepare output of VINS
         key_poses.clear();
         for (int i = 0; i <= WINDOW_SIZE; i++)
@@ -979,7 +1001,7 @@ bool Estimator::initialStructure()
     {
         // provide initial guess
         cv::Mat r, rvec, t, D, tmp_r;
-        if((frame_it->first) == Headers[i])
+        if((frame_it->first) == Headers[i]) //UV .stamp.toSec()
         {
             frame_it->second.is_key_frame = true;
             frame_it->second.R = Q[i].toRotationMatrix() * RIC[0].transpose(); //得到R_w_i 也即R_c0_i
@@ -1077,13 +1099,24 @@ bool Estimator::visualInitialAlign()
     //Headers[i]存储图像帧时间戳，初始化过程中，仅边缘化老的图像帧，因此留在滑窗中的均为关键帧
     for (int i = 0; i <= frame_count; i++)
     {
-        Matrix3d Ri = all_image_frame[Headers[i]].R;
-        Vector3d Pi = all_image_frame[Headers[i]].T;
+        Matrix3d Ri = all_image_frame[Headers[i]].R; //UV stamp.toSec()
+        Vector3d Pi = all_image_frame[Headers[i]].T; //UV stamp.toSec()
         Ps[i] = Pi;//t_c0_c
         Rs[i] = Ri;//R_c0_b
         all_image_frame[Headers[i]].is_key_frame = true;
     }
-
+    /* UV
+    VectorXd dep = f_manager.getDepthVector();
+    for (int i = 0; i < dep.size(); i++)
+        dep[i] = -1;
+    f_manager.clearDepth(dep);
+    
+    //triangulat on cam pose , no tic
+    Vector3d TIC_TMP[NUM_OF_CAM];
+    for(int i = 0; i < NUM_OF_CAM; i++)
+        TIC_TMP[i].setZero();
+    ric[0] = RIC[0];
+    */
     double s = (x.tail<1>())(0);
     for (int i = 0; i <= WINDOW_SIZE; i++)
     {
@@ -1105,6 +1138,14 @@ bool Estimator::visualInitialAlign()
             Vs[kv] = frame_i->second.R * x.segment<3>(kv * 3);
         }
     }
+    /* UV
+    for (auto &it_per_id : f_manager.feature)
+    {
+        it_per_id.used_num = it_per_id.feature_per_frame.size();
+        if (!(it_per_id.used_num >= 2 && it_per_id.start_frame < WINDOW_SIZE - 2))
+            continue;
+        it_per_id.estimated_depth *= s;
+    }*/
     ROS_WARN_STREAM("g0     " << g.transpose());
     Matrix3d R0 = Utility::g2R(g);//根据基于当前世界坐标系计算得到的重力方向与实际重力方向差异，计算当前世界坐标系的修正量；
     //注意：由于yaw不可观，修正量中剔除了yaw影响，也即仅将世界坐标系的z向与重力方向对齐
@@ -1155,6 +1196,39 @@ bool Estimator::relativePose(Matrix3d &relative_R, Vector3d &relative_T, int &l)
             {
                 l = i;
                 ROS_DEBUG("average_parallax %f choose l %d and newest frame to triangulate the whole structure", average_parallax * 460, l);
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+
+bool Estimator::relativePoseForLine(Matrix3d &relative_R, Vector3d &relative_T, int &l)
+{
+    // find previous frame which contians enough correspondance and parallex with newest frame
+    for (int i = 0; i < WINDOW_SIZE; i++)
+    {
+        vector<pair<Vector3d, Vector3d>> corres;
+        corres = f_manager.getLineCorresponding(i, WINDOW_SIZE);
+
+        if (corres.size() > 10) /// NEED TO BE SET --> continously 20 frame tracking
+        {
+            double sum_parallax = 0;
+            double average_parallax;
+            for (int j = 0; j < int(corres.size()); j++)
+            {
+                Vector2d pts_0(corres[j].first(0), corres[j].first(1));
+                Vector2d pts_1(corres[j].second(0), corres[j].second(1));
+                double parallax = (pts_0 - pts_1).norm();
+                sum_parallax = sum_parallax + parallax;
+
+            }
+            average_parallax = 1.0 * sum_parallax / int(corres.size());
+            if(average_parallax * FOCAL_LENGTH > 30 && m_estimator.solveRelativeRT(corres, relative_R, relative_T))
+            {
+                l = i;
+                ROS_DEBUG("[LINE]average_parallax %f choose l %d and newest frame to triangulate the whole structure", average_parallax * 460, l);
                 return true;
             }
         }
@@ -1229,6 +1303,22 @@ void Estimator::vector2double()
 
     para_Td[0][0] = td;
     para_Td_wheel[0][0] = td_wheel;
+   
+    vector<Vector4d> get_lineOrtho = f_manager.getLineOrthonormal();
+
+//    cout << "vector2double: " << f_manager.getLineFeatureCount() << endl;
+    for(int i = 0; i < f_manager.getLineFeatureCount(); i++)
+    {
+        para_Ortho_plucker[i][0] = get_lineOrtho.at(i)[0];
+        para_Ortho_plucker[i][1] = get_lineOrtho.at(i)[1];
+        para_Ortho_plucker[i][2] = get_lineOrtho.at(i)[2];
+        para_Ortho_plucker[i][3] = get_lineOrtho.at(i)[3];
+
+//        cout << para_Ortho_plucker[i][0] << ", " <<
+//                para_Ortho_plucker[i][1] << ", " <<
+//                para_Ortho_plucker[i][2] << ", " <<
+//                para_Ortho_plucker[i][3] << endl;
+    } 
 }
 
 void Estimator::double2vector()
@@ -1338,6 +1428,47 @@ void Estimator::double2vector()
 
     if(USE_IMU)
         td = para_Td[0][0];
+    /* UV
+    // relative info between two loop frame
+    if(relocalization_info)
+    {
+        Matrix3d relo_r;
+        Vector3d relo_t;
+        relo_r = rot_diff * Quaterniond(relo_Pose[6], relo_Pose[3], relo_Pose[4], relo_Pose[5]).normalized().toRotationMatrix();
+        relo_t = rot_diff * Vector3d(relo_Pose[0] - para_Pose[0][0],
+                                     relo_Pose[1] - para_Pose[0][1],
+                                     relo_Pose[2] - para_Pose[0][2]) + origin_P0;
+        double drift_correct_yaw;
+        drift_correct_yaw = Utility::R2ypr(prev_relo_r).x() - Utility::R2ypr(relo_r).x();
+        drift_correct_r = Utility::ypr2R(Vector3d(drift_correct_yaw, 0, 0));
+        drift_correct_t = prev_relo_t - drift_correct_r * relo_t;
+        relo_relative_t = relo_r.transpose() * (Ps[relo_frame_local_index] - relo_t);
+        relo_relative_q = relo_r.transpose() * Rs[relo_frame_local_index];
+        relo_relative_yaw = Utility::normalizeAngle(Utility::R2ypr(Rs[relo_frame_local_index]).x() - Utility::R2ypr(relo_r).x());
+        //cout << "vins relo " << endl;
+        //cout << "vins relative_t " << relo_relative_t.transpose() << endl;
+        //cout << "vins relative_yaw " <<relo_relative_yaw << endl;
+        relocalization_info = 0;
+
+    }
+    */
+//    cout << "double2vector: " << f_manager.getLineFeatureCount() << endl;
+    vector<Vector4d> get_lineOrtho = f_manager.getLineOrthonormal();
+    for(int i =0; i < f_manager.getLineFeatureCount(); i++)
+    {
+        get_lineOrtho.at(i)[0] = para_Ortho_plucker[i][0];
+        get_lineOrtho.at(i)[1] = para_Ortho_plucker[i][1];
+        get_lineOrtho.at(i)[2] = para_Ortho_plucker[i][2];
+        get_lineOrtho.at(i)[3] = para_Ortho_plucker[i][3];
+
+//        cout << para_Ortho_plucker[i][0] << ", " <<
+//            para_Ortho_plucker[i][1] << ", " <<
+//            para_Ortho_plucker[i][2] << ", " <<
+//            para_Ortho_plucker[i][3] << endl;
+
+    }
+//    f_manager.setOrthoPlucker(get_lineOrtho);
+    f_manager.setLineOrtho(get_lineOrtho, Ps, Rs, tic[0], ric[0]);
 
 }
 
@@ -1393,14 +1524,22 @@ bool Estimator::failureDetection()
 void Estimator::optimization()
 {
     TicToc t_whole, t_prepare;
-    vector2double();
+    vector2double(); //UV Later
 
     ceres::Problem problem;
     ceres::LossFunction *loss_function;
     //loss_function = NULL;
-    loss_function = new ceres::HuberLoss(1.0);
+    loss_function = new ceres::HuberLoss(1.0); //UV CauchyLoss
     //loss_function = new ceres::CauchyLoss(1.0 / FOCAL_LENGTH);
     //ceres::LossFunction* loss_function = new ceres::HuberLoss(1.0);
+    
+    ceres::LossFunction *line_loss_function;
+    line_loss_function = new ceres::CauchyLoss(0.1);
+
+    ceres::LossFunction *vp_loss_function;
+//    vp_loss_function = NULL;
+    vp_loss_function = new ceres::CauchyLoss(1.0); 
+
     for (int i = 0; i < frame_count + 1; i++)
     {
         ceres::LocalParameterization *local_parameterization = new PoseLocalParameterization();
@@ -1592,7 +1731,7 @@ void Estimator::optimization()
         }
     }
 
-    if(USE_VP && van_point[0] && van_point[1]) //Vanishing Point
+    /* VP if(USE_VP && van_point[0] && van_point[1]) //Vanishing Point
     {
         // double fx,fy,cx,cy,x,y;
         
@@ -1609,7 +1748,7 @@ void Estimator::optimization()
         }
             problem.AddResidualBlock(vp_factor, NULL, para_Pose[i],para_Ex_Pose[0]);
         }
-    }
+    } */
 
     int f_m_cnt = 0;
     int feature_index = -1;
@@ -1663,6 +1802,73 @@ void Estimator::optimization()
                
             }
             f_m_cnt++;
+        }
+    }
+    
+    int line_feature_index = -1;
+    for(auto &it_per_id : f_manager.line_feature)
+    {
+        it_per_id.used_num = it_per_id.line_feature_per_frame.size();
+        if(it_per_id.used_num < LINE_WINDOW)
+            continue;
+//        if(it_per_id.solve_flag == 0)
+//            continue;
+
+        ++line_feature_index;
+
+        int imu_i = it_per_id.start_frame, imu_j = imu_i - 1;
+        for (auto &it_per_frame : it_per_id.line_feature_per_frame)
+        {
+            imu_j++;
+
+            Vector3d t_wb(para_Pose[imu_i][0], para_Pose[imu_i][1], para_Pose[imu_i][2]);
+            Quaterniond q_wb(para_Pose[imu_i][6], para_Pose[imu_i][3], para_Pose[imu_i][4], para_Pose[imu_i][5]);
+
+            AngleAxisd roll(para_Ortho_plucker[line_feature_index][0], Vector3d::UnitX());
+            AngleAxisd pitch(para_Ortho_plucker[line_feature_index][1], Vector3d::UnitY());
+            AngleAxisd yaw(para_Ortho_plucker[line_feature_index][2], Vector3d::UnitZ());
+
+            double pi = para_Ortho_plucker[line_feature_index][3];
+
+            Matrix<double, 3, 3, RowMajor> Rotation_psi;
+            Rotation_psi = roll * pitch * yaw;
+            Vector3d n_w = cos(pi) * Rotation_psi.block<3,1>(0,0);
+            Vector3d d_w = sin(pi) * Rotation_psi.block<3,1>(0,1);
+
+            Matrix<double, 6, 1> l_w;
+            l_w.block<3,1>(0,0) = n_w;
+            l_w.block<3,1>(3,0) = d_w;
+
+            Matrix3d R_wc = q_wb * ric[0];
+            Vector3d t_wc = q_wb * tic[0] + t_wb;
+
+            Matrix<double, 6, 6> T_cw;
+            T_cw.setZero();
+            T_cw.block<3,3>(0,0) = R_wc.transpose();
+            T_cw.block<3,3>(0,3) = Utility::skewSymmetric(-R_wc.transpose() * t_wc) * R_wc.transpose();
+            T_cw.block<3,3>(3,3) = R_wc.transpose();
+
+            Matrix<double, 6, 1> l_c = T_cw * l_w;
+            Vector3d n_c = l_c.block<3,1>(0,0);
+            Vector3d d_c = l_c.block<3,1>(3,0);
+
+            ceres::CostFunction* cost_function = new ceres::AutoDiffCostFunction<LineProjectionFactor, 2, 7, 4>
+                (new LineProjectionFactor(ric[0], tic[0], it_per_frame.start_point, it_per_frame.end_point));
+            problem.AddResidualBlock(cost_function, line_loss_function, para_Pose[imu_j], para_Ortho_plucker[line_feature_index]);
+
+            if(it_per_frame.vp(2) == 1)
+            {
+//                cout << it_per_frame.vp(2) << endl;
+                ceres::CostFunction* cost_function = new ceres::AutoDiffCostFunction<VPProjectionFactor, 1, 7, 4>
+                        (new VPProjectionFactor(ric[0], tic[0], it_per_frame.start_point, it_per_frame.end_point, it_per_frame.vp));
+                problem.AddResidualBlock(cost_function, vp_loss_function, para_Pose[imu_j], para_Ortho_plucker[line_feature_index]);
+
+//                cout << "---------------" << endl;
+//                cout << it_per_frame.vp.x() << ", " <<
+//                        it_per_frame.vp.y() << ", " << endl;
+
+//                cout << d_c(0)/d_c(2) << ", " << d_c(1)/d_c(2) << endl;
+            }
         }
     }
 
@@ -1752,7 +1958,7 @@ void Estimator::optimization()
             marginalization_info->addResidualBlockInfo(residual_block_info);
         }
     
-        if(USE_VP && van_point[0] && van_point[1])
+        /* VP if(USE_VP && van_point[0] && van_point[1])
         {
             VanishingPointFactor* vp_factor = new VanishingPointFactor(van_point[0],van_point[1],FX,FY,CX,CY);
             ResidualBlockInfo *residual_block_info = new ResidualBlockInfo(vp_factor, NULL,
@@ -1760,7 +1966,7 @@ void Estimator::optimization()
                                                                            vector<int>{0});//边缘化 para_Pose[0]
             printf("adding vp marginalization info");
             marginalization_info->addResidualBlockInfo(residual_block_info);
-        } 
+        } */
 
         //图像部分，基于与第0帧相关的图像残差，边缘化第一次观测的图像帧为第0帧的路标点和第0帧
         {
@@ -1817,6 +2023,55 @@ void Estimator::optimization()
                 }
             }
         }
+        /*
+        {
+            int line_feature_index=-1;
+            for(auto &it_per_id : f_manager.line_feature)
+            {
+                it_per_id.used_num = it_per_id.line_feature_per_frame.size();
+                if(it_per_id.used_num < LINE_WINDOW)
+                    continue;
+//                if(it_per_id.solve_flag == 0)
+//                    continue;
+
+                ++line_feature_index;
+                int imu_i = it_per_id.start_frame, imu_j = imu_i - 1;
+                if(imu_i != 0)
+                    continue;
+
+                for (auto &it_per_frame : it_per_id.line_feature_per_frame)
+                {
+                    imu_j++;
+
+                    std::vector<int> drop_set;
+                    if(imu_i == imu_j)
+//                        drop_set = vector<int>{0, 2};   // marg pose and feature,  !!!! do not need marg, just drop they  !!!
+                        continue;
+                    else
+                        drop_set = vector<int>{1};      // marg feature
+
+                    ceres::CostFunction* cost_function = new ceres::AutoDiffCostFunction<LineProjectionFactor, 2, 7, 4>
+                        (new LineProjectionFactor(ric[0], tic[0], it_per_frame.start_point, it_per_frame.end_point));
+
+                    ResidualBlockInfo *residual_block_info = new ResidualBlockInfo(cost_function, line_loss_function,
+                                                                                   vector<double *>{para_Pose[imu_j], para_Ortho_plucker[line_feature_index]},
+                                                                                   drop_set);
+                    marginalization_info->addResidualBlockInfo(residual_block_info);
+
+                    if(it_per_frame.vp(2) == 1)
+                    {
+        //                cout << it_per_frame.vp(2) << endl;
+                        ceres::CostFunction* cost_function = new ceres::AutoDiffCostFunction<VPProjectionFactor, 1, 7, 4>
+                                (new VPProjectionFactor(ric[0], tic[0], it_per_frame.start_point, it_per_frame.end_point, it_per_frame.vp));
+
+                        ResidualBlockInfo *residual_block_info = new ResidualBlockInfo(cost_function, vp_loss_function,
+                                                                                       vector<double *>{para_Pose[imu_j], para_Ortho_plucker[line_feature_index]},
+                                                                                       drop_set);
+                        marginalization_info->addResidualBlockInfo(residual_block_info);
+                    }
+                }
+            }
+        }*/
 
         TicToc t_pre_margin;
         marginalization_info->preMarginalize();
@@ -1939,7 +2194,7 @@ void Estimator::slideWindow()
     TicToc t_margin;
     if (marginalization_flag == MARGIN_OLD) // 边缘化最老的图像帧，即次新的图像帧为关键帧
     {
-        double t_0 = Headers[0];
+        double t_0 = Headers[0]; //UV .stamp.toSec()
         back_R0 = Rs[0];
         back_P0 = Ps[0];
         if (frame_count == WINDOW_SIZE) //仅在滑窗满时，进行滑窗边缘化处理
@@ -2080,6 +2335,7 @@ void Estimator::slideWindowNew()
 {
     sum_of_front++;
     f_manager.removeFront(frame_count);
+    f_manager.removeLineFront(frame_count);
 }
 
 void Estimator::slideWindowOld()
@@ -2099,6 +2355,7 @@ void Estimator::slideWindowOld()
     }
     else
         f_manager.removeBack();  //初始化未完成，只是更新第一次观测到路标点的图像帧的索引
+    f_manager.removeLineBack();
 }
 
 

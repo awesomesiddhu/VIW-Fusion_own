@@ -24,6 +24,7 @@ using namespace std;
 const double FOCAL_LENGTH = 460.0;
 const int WINDOW_SIZE = 10;
 const int NUM_OF_F = 1000;
+const int NUM_OF_LF = 1000;
 //#define UNIT_SPHERE_ERROR
 
 extern double INIT_DEPTH;
@@ -31,6 +32,11 @@ extern double MIN_PARALLAX;
 extern int ESTIMATE_EXTRINSIC;
 extern int ESTIMATE_EXTRINSIC_WHEEL;
 extern int ESTIMATE_INTRINSIC_WHEEL;
+
+
+extern int LINE_WINDOW;
+extern double LINE_FACTOR;
+extern double VP_FACTOR; 
 
 extern double ACC_N, ACC_W;
 extern double GYR_N, GYR_W;
@@ -77,6 +83,7 @@ extern int ROLLING_SHUTTER;
 extern int ROW, COL;
 extern int NUM_OF_CAM;
 extern int STEREO;
+extern int STEREO_TRACK;
 extern int USE_IMU;
 extern int USE_WHEEL;
 extern int USE_PLANE;
@@ -106,7 +113,8 @@ enum SIZE_PARAMETERIZATION
     SIZE_POSE = 7,
     SIZE_ROTATION = 4,
     SIZE_SPEEDBIAS = 9,
-    SIZE_FEATURE = 1
+    SIZE_FEATURE = 1,
+    SIZE_LINE_FEATURE = 4
 };
 
 enum StateOrder
