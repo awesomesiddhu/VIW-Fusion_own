@@ -9,11 +9,11 @@
 
 #include "feature_manager.h"
 
-/* UV
+
 int LineFeaturePerId::endFrame()
 {
     return start_frame + line_feature_per_frame.size() - 1;
-}*/
+}
 
 int FeaturePerId::endFrame()
 {
@@ -81,7 +81,8 @@ int FeatureManager::getFeatureCount()
 }
 
 
-bool FeatureManager::addFeatureCheckParallax(int frame_count, const map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> &image, const map<int, vector<Eigen::Matrix<double, 15, 1>>> &image_line, double td) 
+bool FeatureManager::addFeatureCheckParallax(int frame_count, const map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> &image,
+                                                              const map<int, vector<Eigen::Matrix<double, 15, 1>>> &image_line, double td) 
 {
     ROS_DEBUG("input feature: %d", (int)image.size());
     ROS_DEBUG("num of feature: %d", getFeatureCount());

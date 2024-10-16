@@ -42,6 +42,9 @@ include_directories(
   ${ARMADILLO_INCLUDE_DIRS}
 )
 
+set(ELSED_PATH /home/siddharth/viw_uvslam/src/VIW-Fusion_own/ELSED)
+find_library(ELSED_LIB elsed ${ELSED_PATH}/build)
+include_directories(${ELSED_PATH}/src)
 
 catkin_package(
   INCLUDE_DIRS src
@@ -79,11 +82,14 @@ add_library(vins_lib
         src/initial/initial_aligment.cpp
         src/initial/initial_sfm.cpp
         src/initial/initial_ex_rotation.cpp
-        src/featureTracker/feature_tracker.cpp)
+        src/featureTracker/feature_tracker.cpp
+        src/featureTracker/line_feature_tracker.cpp)
 target_link_libraries(vins_lib ${catkin_LIBRARIES} ${OpenCV_LIBS} ${CERES_LIBRARIES} 
 ${LAPACK_LIBRARIES}
 ${BLAS_LIBRARIES}
-${ARMADILLO_LIBRARIES})
+${ARMADILLO_LIBRARIES}
+${EIGEN3_LIBRARIES}
+${ELSED_LIB})
 
 
 add_executable(vins_node src/rosNodeTest.cpp)

@@ -11,38 +11,12 @@
 
 #include "feature_tracker.h"
 
-bool FeatureTracker::inBorder(const cv::Point2f &pt)
-{
-    const int BORDER_SIZE = 1;
-    int img_x = cvRound(pt.x);
-    int img_y = cvRound(pt.y);
-    return BORDER_SIZE <= img_x && img_x < col - BORDER_SIZE && BORDER_SIZE <= img_y && img_y < row - BORDER_SIZE;
-}
-
 double distance(cv::Point2f pt1, cv::Point2f pt2)
 {
     //printf("pt1: %f %f pt2: %f %f\n", pt1.x, pt1.y, pt2.x, pt2.y);
     double dx = pt1.x - pt2.x;
     double dy = pt1.y - pt2.y;
     return sqrt(dx * dx + dy * dy);
-}
-
-void reduceVector(vector<cv::Point2f> &v, vector<uchar> status)
-{
-    int j = 0;
-    for (int i = 0; i < int(v.size()); i++)
-        if (status[i])
-            v[j++] = v[i];
-    v.resize(j);
-}
-
-void reduceVector(vector<int> &v, vector<uchar> status)
-{
-    int j = 0;
-    for (int i = 0; i < int(v.size()); i++)
-        if (status[i])
-            v[j++] = v[i];
-    v.resize(j);
 }
 
 FeatureTracker::FeatureTracker()
@@ -158,12 +132,12 @@ map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> FeatureTracker::trackIm
         }
         
         for (int i = 0; i < int(cur_pts.size()); i++)
-            if (status[i] && !inBorder(cur_pts[i]))// 如果这个点不在图像内，则剔除
+            if (status[i] && !util.inBorder(cur_pts[i]))// 如果这个点不在图像内，则剔除
                 status[i] = 0;
-        reduceVector(prev_pts, status);
-        reduceVector(cur_pts, status);
-        reduceVector(ids, status);
-        reduceVector(track_cnt, status);
+        util.reduceVector(prev_pts, status);
+        util.reduceVector(cur_pts, status);
+        util.reduceVector(ids, status);
+        util.reduceVector(track_cnt, status);
         ROS_DEBUG("temporal optical flow costs: %fms", t_o.toc());
         //printf("track cnt %d\n", (int)ids.size());
     }
@@ -244,7 +218,7 @@ map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> FeatureTracker::trackIm
                 cv::calcOpticalFlowPyrLK(rightImg, cur_img, cur_right_pts, reverseLeftPts, statusRightLeft, err, cv::Size(21, 21), 3);
                 for(size_t i = 0; i < status.size(); i++)
                 {
-                    if(status[i] && statusRightLeft[i] && inBorder(cur_right_pts[i]) && distance(cur_pts[i], reverseLeftPts[i]) <= 0.5)
+                    if(status[i] && statusRightLeft[i] && util.inBorder(cur_right_pts[i]) && distance(cur_pts[i], reverseLeftPts[i]) <= 0.5)
                         status[i] = 1;
                     else
                         status[i] = 0;
@@ -252,15 +226,15 @@ map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> FeatureTracker::trackIm
             }
 
             ids_right = ids;
-            reduceVector(cur_right_pts, status);
-            reduceVector(ids_right, status);
+            util.reduceVector(cur_right_pts, status);
+            util.reduceVector(ids_right, status);
             // only keep left-right pts
             /*
-            reduceVector(cur_pts, status);
-            reduceVector(ids, status);
-            reduceVector(track_cnt, status);
-            reduceVector(cur_un_pts, status);
-            reduceVector(pts_velocity, status);
+            util.reduceVector(cur_pts, status);
+            util.reduceVector(ids, status);
+            util.reduceVector(track_cnt, status);
+            util.reduceVector(cur_un_pts, status);
+            util.reduceVector(pts_velocity, status);
             */
             cur_un_right_pts = undistortedPts(cur_right_pts, m_camera[1]);
             right_pts_velocity = ptsVelocity(ids_right, cur_un_right_pts, cur_un_right_pts_map, prev_un_right_pts_map);
@@ -434,7 +408,7 @@ map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> FeatureTracker::trackFe
                 cv::calcOpticalFlowPyrLK(rightImg, cur_img, cur_right_pts, reverseLeftPts, statusRightLeft, err, cv::Size(21, 21), 3);
                 for(size_t i = 0; i < status.size(); i++)
                 {
-                    if(status[i] && statusRightLeft[i] && inBorder(cur_right_pts[i]) && distance(cur_pts[i], reverseLeftPts[i]) <= 0.5)
+                    if(status[i] && statusRightLeft[i] && util.inBorder(cur_right_pts[i]) && distance(cur_pts[i], reverseLeftPts[i]) <= 0.5)
                         status[i] = 1;
                     else
                         status[i] = 0;
@@ -442,15 +416,15 @@ map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> FeatureTracker::trackFe
             }
 
             ids_right = ids;
-            reduceVector(cur_right_pts, status);
-            reduceVector(ids_right, status);
+            util.reduceVector(cur_right_pts, status);
+            util.reduceVector(ids_right, status);
             // only keep left-right pts
             /*
-            reduceVector(cur_pts, status);
-            reduceVector(ids, status);
-            reduceVector(track_cnt, status);
-            reduceVector(cur_un_pts, status);
-            reduceVector(pts_velocity, status);
+            util.reduceVector(cur_pts, status);
+            util.reduceVector(ids, status);
+            util.reduceVector(track_cnt, status);
+            util.reduceVector(cur_un_pts, status);
+            util.reduceVector(pts_velocity, status);
             */
             cur_un_right_pts = undistortedPts(cur_right_pts, m_camera[1]);
             right_pts_velocity = ptsVelocity(ids_right, cur_un_right_pts, cur_un_right_pts_map, prev_un_right_pts_map);
@@ -544,11 +518,11 @@ void FeatureTracker::rejectWithF()
         vector<uchar> status;
         cv::findFundamentalMat(un_cur_pts, un_prev_pts, cv::FM_RANSAC, F_THRESHOLD, 0.99, status);
         int size_a = cur_pts.size();
-        reduceVector(prev_pts, status);
-        reduceVector(cur_pts, status);
-        reduceVector(cur_un_pts, status);
-        reduceVector(ids, status);
-        reduceVector(track_cnt, status);
+        util.reduceVector(prev_pts, status);
+        util.reduceVector(cur_pts, status);
+        util.reduceVector(cur_un_pts, status);
+        util.reduceVector(ids, status);
+        util.reduceVector(track_cnt, status);
         ROS_DEBUG("FM ransac: %d -> %lu: %f", size_a, cur_pts.size(), 1.0 * cur_pts.size() / size_a);
         ROS_DEBUG("FM ransac costs: %fms", t_f.toc());
     }
@@ -771,9 +745,9 @@ void FeatureTracker::removeOutliers(set<int> &removePtsIds)
             status.push_back(1);
     }
 
-    reduceVector(prev_pts, status);
-    reduceVector(ids, status);
-    reduceVector(track_cnt, status);
+    util.reduceVector(prev_pts, status);
+    util.reduceVector(ids, status);
+    util.reduceVector(track_cnt, status);
 }
 
 

@@ -122,7 +122,7 @@ class Estimator
     queue<pair<double, Eigen::Vector3d>> wheelVelBuf;
     queue<pair<double, Eigen::Vector3d>> gyrBuf;
     queue<pair<double, Eigen::Vector3d>> wheelGyrBuf;
-    queue<std::tuple<double, map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>>, map<int, vector<pair<int, Eigen::Matrix<double, 15, 1>>>>>> featureBuf;
+    queue<std::tuple<double, map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>>, map<int, vector<Eigen::Matrix<double, 15, 1>>>>> featureBuf;
     queue<pair<double, Eigen::Matrix<double,7,1>>> groundtruthBuf;
     double prevTime, curTime;
     double prevTime_wheel, curTime_wheel;

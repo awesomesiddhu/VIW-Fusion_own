@@ -509,6 +509,20 @@ PinholeCamera::liftProjective(const Eigen::Vector2d& p, Eigen::Vector3d& P) cons
     P << mx_u, my_u, 1.0;
 }
 
+void PinholeCamera::liftProjective4line(const Eigen::Vector2d& p, Eigen::Vector3d& P)const
+{
+
+  double mx_d, my_d,mx2_d, mxy_d, my2_d, mx_u, my_u;
+  double rho2_d, rho4_d, radDist_d, Dx_d, Dy_d, inv_denom_d;
+  //double lambda;
+
+  // Lift points to normalised plane
+  mx_d = m_inv_K11 * p(0) + m_inv_K13;
+  my_d = m_inv_K22 * p(1) + m_inv_K23;
+
+  P << mx_d, my_d, 1.0;
+
+}
 
 /**
  * \brief Project a 3D point (\a x,\a y,\a z) to the image plane in (\a u,\a v)

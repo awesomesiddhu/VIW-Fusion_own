@@ -26,7 +26,7 @@
 #include "math.h"
 #include "../utility/utility.h"
 #include "opencv2/highgui/highgui.hpp"
-#include "../../../ELSED/src/ELSED.h"
+#include "ELSED.h"
 
 using namespace std;
 using namespace camodocal;
@@ -42,7 +42,7 @@ class LineFeatureTracker
   public:
     LineFeatureTracker();
 
-    void readImage4Line(const Mat &_img, double _cur_time);
+    map<int, vector<Eigen::Matrix<double, 15, 1>>> readImage4Line(const Mat &_img, double _cur_time);
     void imageUndistortion(Mat &_img, Mat &_out_undistort_img);
     void readIntrinsicParameter(const string &calib_file);
     void lineExtraction( Mat &cur_img, vector<LineKL> &_keyLine, Mat &_descriptor );

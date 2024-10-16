@@ -220,7 +220,7 @@ void Estimator::inputImage(double t, const cv::Mat &_img, const cv::Mat &_img1)
 {
     inputImageCnt++;
     map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> featureFrame;
-    map<int, vector<pair<int, Eigen::Matrix<double, 15, 1>>>> lineFrame;
+    map<int, vector<Eigen::Matrix<double, 15, 1>>> lineFrame;
     TicToc featureTrackerTime;
 
     if(_img1.empty()){
@@ -471,7 +471,7 @@ void Estimator::processMeasurements()
     {
         //printf("process measurments\n");
         // 时间 特征点ID 图像id xyz_uv_vel
-        std::tuple<double, map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>>, map<int, vector<pair<int, Eigen::Matrix<double, 15, 1>>>>> feature;
+        std::tuple<double, map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>>, map<int, vector<Eigen::Matrix<double, 15, 1>>>> feature;
         vector<pair<double, Eigen::Vector3d>> accVector, gyrVector;
         vector<pair<double, Eigen::Vector3d>> velWheelVector, gyrWheelVector;
         if(!featureBuf.empty())

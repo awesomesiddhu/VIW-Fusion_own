@@ -5,6 +5,7 @@
 #include <opencv2/core/core.hpp>
 
 #include "camodocal/camera_models/Camera.h"
+#include "camodocal/camera_models/PinholeCamera.h"
 
 namespace camodocal
 {
@@ -22,6 +23,8 @@ public:
                              cv::Size imageSize) const;
 
     CameraPtr generateCameraFromYamlFile(const std::string& filename);
+
+    PinholeCameraPtr generateCameraFromYamlFile(const std::string& filename, bool pinhol);
 
 private:
     static boost::shared_ptr<CameraFactory> m_instance;

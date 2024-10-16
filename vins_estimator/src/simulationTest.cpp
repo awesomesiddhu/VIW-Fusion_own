@@ -132,8 +132,8 @@ void sync_process()
                 feature0_buf.pop();
             }
             m_buf.unlock();
-            if(!features.empty())
-                estimator.inputFeature(time, features);
+            //if(!features.empty())
+                //estimator.inputFeature(time, features);
         }
 
         std::chrono::milliseconds dura(2);
@@ -192,6 +192,7 @@ void groundtruth_callback(const geometry_msgs::PoseStampedConstPtr & pose_msg)
     data << tmp_Q.w,tmp_Q.x, tmp_Q.y, tmp_Q.z, tmp_t.x, tmp_t.y, tmp_t.z;
     estimator.inputGroundtruth(pose_msg->header.stamp.toSec(), data);
 }
+/*
 void feature_callback(const sensor_msgs::PointCloudConstPtr &feature_msg)
 {
     map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> featureFrame;
@@ -222,7 +223,7 @@ void feature_callback(const sensor_msgs::PointCloudConstPtr &feature_msg)
     double t = feature_msg->header.stamp.toSec();
     estimator.inputFeature(t, featureFrame);
     return;
-}
+} */
 
 void restart_callback(const std_msgs::BoolConstPtr &restart_msg)
 {

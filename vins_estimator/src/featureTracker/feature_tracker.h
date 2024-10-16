@@ -24,14 +24,10 @@
 #include "camodocal/camera_models/PinholeCamera.h"
 #include "../estimator/parameters.h"
 #include "../utility/tic_toc.h"
-
+#include "../utility/utility.h"
 using namespace std;
 using namespace camodocal;
 using namespace Eigen;
-
-bool inBorder(const cv::Point2f &pt);
-void reduceVector(vector<cv::Point2f> &v, vector<uchar> status);
-void reduceVector(vector<int> &v, vector<uchar> status);
 
 class FeatureTracker
 {
@@ -59,7 +55,6 @@ public:
     double distance(cv::Point2f &pt1, cv::Point2f &pt2);
     void removeOutliers(set<int> &removePtsIds);
     cv::Mat getTrackImage();
-    bool inBorder(const cv::Point2f &pt);
 
     int row, col;
     cv::Mat imTrack;
@@ -81,6 +76,7 @@ public:
     vector<camodocal::CameraPtr> m_camera;
     double cur_time;
     double prev_time;
+    Utility util;
     bool stereo_cam;
     int n_id;
     bool hasPrediction;

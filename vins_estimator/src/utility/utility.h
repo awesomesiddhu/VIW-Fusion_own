@@ -15,10 +15,16 @@
 #include <eigen3/Eigen/Dense>
 #include <iostream>
 #include <vector>
-
+#include <opencv2/opencv.hpp>
+#include <opencv2/core.hpp>
 class Utility
 {
   public:
+    bool inBorder(const cv::Point2f &pt);
+	void reduceVector(std::vector<cv::Point2f> &v, std::vector<uchar> status);
+	void reduceVector4Line(std::vector<cv::Point2f> &v, std::vector<uchar> status);
+	void reduceVector(std::vector<int> &v, std::vector<uchar> status);
+
     template <typename Derived>
     static Eigen::Quaternion<typename Derived::Scalar> deltaQ(const Eigen::MatrixBase<Derived> &theta)
     {
@@ -200,4 +206,5 @@ class Utility
 
         return average;
     }
+
 };

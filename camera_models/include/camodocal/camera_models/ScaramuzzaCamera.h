@@ -87,7 +87,7 @@ public:
     // Lift points from the image plane to the projective space
     void liftProjective(const Eigen::Vector2d& p, Eigen::Vector3d& P) const;
     //%output P
-
+    void liftProjective4line(const Eigen::Vector2d& p, Eigen::Vector3d& P) const;
     // Projects 3D points to the image plane (Pi function)
     void spaceToPlane(const Eigen::Vector3d& P, Eigen::Vector2d& p) const;
     //%output p

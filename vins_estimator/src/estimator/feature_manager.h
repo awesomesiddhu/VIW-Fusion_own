@@ -202,7 +202,8 @@ class FeatureManager
     void clearState();
     int getFeatureCount();
     int getLineFeatureCount();
-    bool addFeatureCheckParallax(int frame_count, const map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> &image, const map<int, vector<Eigen::Matrix<double, 15, 1>>> &image_line, double td);  
+    bool addFeatureCheckParallax(int frame_count, const map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> &image,
+                                                              const map<int, vector<Eigen::Matrix<double, 15, 1>>> &image_line, double td);  
     vector<pair<Vector3d, Vector3d>> getCorresponding(int frame_count_l, int frame_count_r);
     // UV void debugShow();
     vector<pair<Vector3d, Vector3d>> getLineCorresponding(int frame_count_l, int frame_count_r);

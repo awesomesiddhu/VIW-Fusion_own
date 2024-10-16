@@ -187,4 +187,22 @@ CameraFactory::generateCameraFromYamlFile( const std::string& filename )
 
     return CameraPtr( );
 }
+
+PinholeCameraPtr CameraFactory::generateCameraFromYamlFile(const std::string& filename, bool pinhol)
+{
+    cv::FileStorage fs(filename, cv::FileStorage::READ);
+
+    if (!fs.isOpened())
+    {
+        return PinholeCameraPtr();
+    }
+
+    PinholeCameraPtr camera(new PinholeCamera);
+
+    PinholeCamera::Parameters params = camera->getParameters();
+    params.readFromYamlFile(filename);
+    camera->setParameters(params);
+    return camera;
+}
+
 }

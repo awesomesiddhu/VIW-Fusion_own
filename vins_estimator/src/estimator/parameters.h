@@ -84,6 +84,7 @@ extern int ROW, COL;
 extern int NUM_OF_CAM;
 extern int STEREO;
 extern int STEREO_TRACK;
+extern int EQUALIZE;
 extern int USE_IMU;
 extern int USE_WHEEL;
 extern int USE_PLANE;
@@ -105,6 +106,17 @@ extern int MIN_DIST;
 extern double F_THRESHOLD;
 extern int SHOW_TRACK;
 extern int FLOW_BACK;
+
+
+extern double PROJ_FX;
+extern double PROJ_FY;
+extern double PROJ_CX;
+extern double PROJ_CY;
+
+extern double DIST_K1;
+extern double DIST_K2;
+extern double DIST_P1;
+extern double DIST_P2;
 
 void readParameters(std::string config_file);
 

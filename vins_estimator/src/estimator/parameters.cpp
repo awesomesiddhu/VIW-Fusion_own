@@ -62,6 +62,8 @@ double OFFSET_SIM = 0.0;
 double TD_WHEEL;
 int NUM_OF_CAM;
 int STEREO;
+int STEREO_TRACK;
+int EQUALIZE;
 int USE_IMU;
 int USE_WHEEL;
 int USE_PLANE;
@@ -86,6 +88,16 @@ int MIN_DIST;
 double F_THRESHOLD;
 int SHOW_TRACK;
 int FLOW_BACK;
+
+double PROJ_FX;
+double PROJ_FY;
+ double PROJ_CX;
+ double PROJ_CY;
+
+ double DIST_K1;
+ double DIST_K2;
+ double DIST_P1;
+ double DIST_P2;
 
 CameraExtrinsicAdjustType CAM_EXT_ADJ_TYPE;
 WheelExtrinsicAdjustType WHEEL_EXT_ADJ_TYPE;
