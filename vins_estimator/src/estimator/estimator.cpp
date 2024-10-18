@@ -11,7 +11,6 @@
 #include "../utility/visualization.h"
 #include "../factor/pose_subset_parameterization.h"
 #include "../factor/orientation_subset_parameterization.h"
-#include "vp_detector.h"
 
 // VP std::vector<double> van_point(2);
 
@@ -226,6 +225,19 @@ void Estimator::inputImage(double t, const cv::Mat &_img, const cv::Mat &_img1)
     if(_img1.empty()){
         featureFrame = featureTracker.trackImage(t, _img);
         lineFrame = lineTrackerData.readImage4Line(_img, t);
+
+        for (const auto& pair : lineFrame) {
+        int key = pair.first;
+        const std::vector<Eigen::Matrix<double, 15, 1>>& matrices = pair.second;
+
+        std::cout << "Key: " << key << std::endl;
+
+        // Iterate through the vector of matrices
+        for (size_t i = 0; i < matrices.size(); ++i) {
+            std::cout << "Matrix " << i + 1 << ":\n";
+            std::cout << matrices[i] << std::endl;
+        }
+    }
 
         for (unsigned int i = 0;; i++)
         {
@@ -552,6 +564,19 @@ void Estimator::processMeasurements()
                 }
             }
             mProcess.lock();
+            
+            for (const auto& pair : std::get<0>(feature)) {
+                int key = pair.first;
+                const std::vector<Eigen::Matrix<double, 15, 1>>& matrices = pair.second;
+
+                std::cout << "KeyFeature: " << key << std::endl;
+
+                // Iterate through the vector of matrices
+                for (size_t i = 0; i < matrices.size(); ++i) {
+                    std::cout << "MatrixFeature " << i + 1 << ":\n";
+                    std::cout << matrices[i] << std::endl;
+                }
+            }
             processImage(std::get<1>(feature), std::get<2>(feature), std::get<0>(feature)); //feature[2] which is imageline
             prevTime = curTime;
             prevTime_wheel = curTime_wheel;
@@ -570,6 +595,7 @@ void Estimator::processMeasurements()
             pubPointCloud(*this, header);
             pubKeyframe(*this);
             pubTF(*this, header);
+            pubLineCloud(*this, header);
 
             //可视化预积分积分的轨迹
 //            if(USE_WHEEL && solver_flag == NON_LINEAR){

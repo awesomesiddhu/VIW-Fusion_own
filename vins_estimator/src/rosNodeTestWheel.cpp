@@ -87,6 +87,7 @@ cv::Mat getImageFromMsg(const sensor_msgs::ImageConstPtr &img_msg)
         ptr = cv_bridge::toCvCopy(img_msg, sensor_msgs::image_encodings::MONO8);
 
     cv::Mat img = ptr->image.clone();
+    
     return img;
 }
 
@@ -146,7 +147,10 @@ void sync_process()
             }
             m_buf.unlock();
             if(!image.empty())
+            {
                 estimator.inputImage(time, image);
+                estimator.latest_img = image;
+            }
         }
 
         std::chrono::milliseconds dura(2);
@@ -243,14 +247,14 @@ void cam_switch_callback(const std_msgs::BoolConstPtr &switch_msg)
     }
     return;
 }
-
+/*
 void latest_callback(const sensor_msgs::ImagePtr &img_msg)
 {
     m_buf.lock();
     cv_bridge::CvImagePtr ptr = cv_bridge::toCvCopy(img_msg, sensor_msgs::image_encodings::MONO8);
     estimator.latest_img = ptr->image;
     m_buf.unlock();
-}
+}*/
 
 int main(int argc, char **argv)
 {
@@ -288,7 +292,7 @@ int main(int argc, char **argv)
     ros::Subscriber sub_restart = n.subscribe("/vins_restart", 100, restart_callback);
     ros::Subscriber sub_imu_switch = n.subscribe("/vins_imu_switch", 100, imu_switch_callback);
     ros::Subscriber sub_cam_switch = n.subscribe("/vins_cam_switch", 100, cam_switch_callback);
-    ros::Subscriber sub_latest_img = n.subscribe("/feature_tracker/latest_img", 2000, latest_callback);
+    //ros::Subscriber sub_latest_img = n.subscribe("/feature_tracker/latest_img", 2000, latest_callback);
 
     std::thread sync_thread{sync_process};
     ros::spin();

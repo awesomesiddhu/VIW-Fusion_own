@@ -13,7 +13,7 @@ double INIT_DEPTH;
 double MIN_PARALLAX;
 double ACC_N, ACC_W;
 double GYR_N, GYR_W;
-//UV double FOCAL_LENGTH;
+double FOCAL_LENGTH;
 
 double VEL_N_wheel;
 double GYR_N_wheel;
@@ -67,7 +67,7 @@ int EQUALIZE;
 int USE_IMU;
 int USE_WHEEL;
 int USE_PLANE;
-int USE_VP;
+//int USE_VP;
 
 int LINE_WINDOW;
 int LINE_ONLY;
@@ -160,17 +160,19 @@ void readParameters(std::string config_file)
     USE_PLANE = fsSettings["plane"];
     printf("USE_PLANE: %d\n", USE_PLANE);
 
-    USE_VP = fsSettings["vanpoint"];
-    printf("USE_VP: %d\n", USE_VP);
+    //USE_VP = fsSettings["vanpoint"];
+    //printf("USE_VP: %d\n", USE_VP);
 
-    FX = fsSettings["fx"];
+    /*FX = fsSettings["fx"];
     printf("FX: %f\n", FX);
     FY = fsSettings["fy"];
     printf("FY: %f\n", FY);
     CX = fsSettings["cx"];
     printf("CX: %f\n", CX);
     CY = fsSettings["cy"];
-    printf("CY: %f\n", CY);
+    printf("CY: %f\n", CY);*/
+
+
 
     if(USE_IMU)
     {
@@ -465,6 +467,19 @@ void readParameters(std::string config_file)
     LINE_WINDOW = fsSettings["line_window"];
     LINE_FACTOR = fsSettings["line_factor"];
     VP_FACTOR = fsSettings["vp_factor"];
+    
+    cv::FileNode PROJ = fsSettings["projection_parameters"];
+    PROJ_FX = PROJ["fx"];
+    PROJ_FY = PROJ["fy"];
+    PROJ_CX = PROJ["cx"];
+    PROJ_CY = PROJ["cy"];
+    FOCAL_LENGTH = PROJ["fx"];
+
+    cv::FileNode DIST = fsSettings["distortion_parameters"];
+    DIST_K1 = DIST["k1"];
+    DIST_K2 = DIST["k2"];
+    DIST_P1 = DIST["p1"];
+    DIST_P2 = DIST["p2"];
     
     fsSettings.release();
 }

@@ -3,6 +3,12 @@
 
 #include <chrono>
 
+double cx_ = 320.5;
+double cy_ = 240.5;
+double fx = 554.254691191187;
+double fy = 554.254691191187;
+
+
 int LineFeatureTracker::n_id = 0;
 int LineFeatureTracker::vp_id = 0;
 unsigned int frame_count = 0;
@@ -36,6 +42,7 @@ map<int, vector<Eigen::Matrix<double, 15, 1>>> LineFeatureTracker::readImage4Lin
     /// raw image undistortion
     Mat undistort_img, undistort_img1;
     imageUndistortion(img, undistort_img);
+
     if (forw_img.empty())
         prev_img = curr_img = forw_img = undistort_img.clone();
     else
@@ -49,9 +56,11 @@ map<int, vector<Eigen::Matrix<double, 15, 1>>> LineFeatureTracker::readImage4Lin
 
     Mat img1 = curr_img.clone();
     Mat img2 = forw_img.clone();
+
     Mat merged_img;
     cvtColor(img1, img1, cv::COLOR_GRAY2RGB);
     cvtColor(img2, img2, cv::COLOR_GRAY2RGB);
+
 //    cvtColor(merged_img, merged_img, cv::COLOR_GRAY2RGB);
 
     vector<Vector3d> para_vector;
@@ -78,8 +87,8 @@ map<int, vector<Eigen::Matrix<double, 15, 1>>> LineFeatureTracker::readImage4Lin
         double t_extraction = t_r.toc();
         lineMatching(curr_keyLine, forw_keyLine, curr_descriptor, forw_descriptor, good_match_vector);
         double t_matching = t_r.toc() - t_extraction;
-//        cout << t_extraction << ", " << t_matching << endl;
-//        double t_linematching = t_r.toc() - t_lineextraction;
+        //cout << t_extraction << ", " << t_matching << endl;
+        //double t_linematching = t_r.toc() - t_lineextraction;
 //        lineMergingTwoPhase( curr_img, forw_img, curr_keyLine, forw_keyLine, curr_descriptor, forw_descriptor, good_match_vector );
 //        double t_linemerging = t_r.toc() - t_linematching;
 
@@ -989,24 +998,24 @@ void LineFeatureTracker::lineExtraction( Mat &cur_img, vector<LineKL> &keyLine, 
 //    lineLSD->detect(cur_img, keyLine, 2, 2, keyLine_mask);
     TicToc t_r;
 //    lineBiDes->detect(cur_img, keyLine);
-//    double t1 = t_r.toc();
+    double t1 = t_r.toc();
     upm::Segments segs = elsed.detect(forw_img);
-//    cout<< t_r.toc() << endl;
-//    cout << t1 << " , " << t2 << endl;
-//    Mat tmp_img1, tmp_img2;
-//    cvtColor(forw_img, tmp_img1, CV_GRAY2BGR);
-//    cvtColor(forw_img, tmp_img2, CV_GRAY2BGR);
-//    for(int i = 0; i < forw_keyLine.size(); i++)
-//        line(tmp_img1, forw_keyLine[i].getStartPoint(), forw_keyLine[i].getEndPoint(), Scalar(0,255,0), 2);
-//    for(int i = 0; i < segs.size(); i++)
-//    {
-//        upm::Segment seg = segs[i];
-//        line(tmp_img2, cv::Point2f(seg[0], seg[1]), cv::Point2f(seg[2], seg[3]), Scalar(0,255,0), 2);
-//    }
-//    Mat compare;
-//    hconcat(tmp_img1, tmp_img2, compare);
-//    imshow("1", compare);
-//    waitKey(1);
+    //cout<< t_r.toc() << endl;
+    //cout << t1 << " , " << t2 << endl;
+    Mat tmp_img1, tmp_img2;
+    cvtColor(forw_img, tmp_img1, CV_GRAY2BGR);
+    cvtColor(forw_img, tmp_img2, CV_GRAY2BGR);
+    for(int i = 0; i < forw_keyLine.size(); i++)
+        line(tmp_img1, forw_keyLine[i].getStartPoint(), forw_keyLine[i].getEndPoint(), Scalar(0,255,0), 2);
+    for(int i = 0; i < segs.size(); i++)
+    {
+        upm::Segment seg = segs[i];
+        line(tmp_img2, cv::Point2f(seg[0], seg[1]), cv::Point2f(seg[2], seg[3]), Scalar(0,255,0), 2);
+    }
+    Mat compare;
+    hconcat(tmp_img1, tmp_img2, compare);
+    imshow("1", compare);
+    waitKey(1);
 
     int line_id = 0;
     for(unsigned int i = 0; i < segs.size(); i++)
@@ -1183,8 +1192,30 @@ void LineFeatureTracker::normalizePoints(){
         Eigen::Vector2d end_a(curr_end_pts[i].x, curr_end_pts[i].y);
         Eigen::Vector3d end_b;
 
-        pinhole_camera->liftProjective4line(start_a, start_b);
-        pinhole_camera->liftProjective4line(end_a, end_b);
+        double mx_d, my_d,mx2_d, mxy_d, my2_d, mx_u, my_u;
+        double rho2_d, rho4_d, radDist_d, Dx_d, Dy_d, inv_denom_d;
+        //double lambda;
+
+        double m_inv_K11, m_inv_K13, m_inv_K22, m_inv_K23;
+
+        m_inv_K11 = 1.0 / PROJ_FX;
+        m_inv_K13 = -PROJ_CX / PROJ_FX;
+        m_inv_K22 = 1.0 / PROJ_FY;
+        m_inv_K23 = -PROJ_CY / PROJ_FY;
+        // Lift points to normalised plane
+        mx_d = m_inv_K11 * start_a(0) + m_inv_K13;
+        my_d = m_inv_K22 * start_a(1) + m_inv_K23;
+
+        start_b << mx_d, my_d, 1.0;
+
+        // Lift points to normalised plane
+        mx_d = m_inv_K11 * end_a(0) + m_inv_K13;
+        my_d = m_inv_K22 * end_a(1) + m_inv_K23;
+
+        end_b << mx_d, my_d, 1.0;
+        
+        //pinhole_camera->liftProjective4line(start_a, start_b);
+        //pinhole_camera->liftProjective4line(end_a, end_b);
 
         curr_start_un_pts.push_back(Point2f(start_b.x() / start_b.z(), start_b.y() / start_b.z()));
         curr_end_un_pts.push_back(Point2f(end_b.x() / end_b.z(), end_b.y() / end_b.z()));
@@ -2063,9 +2094,9 @@ void LineFeatureTracker::getVPHypVia2Lines(vector<KeyLine> cur_keyLine, vector<V
             continue;
         }
 
-        Vector3d vp1(vp1_Img(0) / vp1_Img(2) - pinhole_camera->getParameters().cx(),
-                     vp1_Img(1) / vp1_Img(2) - pinhole_camera->getParameters().cy(),
-                     pinhole_camera->getParameters().fx() );
+        Vector3d vp1(vp1_Img(0) / vp1_Img(2) - PROJ_CX,
+                     vp1_Img(1) / vp1_Img(2) - PROJ_CY,
+                     PROJ_FX );
         if ( vp1(2) == 0 ) { vp1(2) = 0.0011; }
         double N = sqrt( vp1(0) * vp1(0) + vp1(1) * vp1(1) + vp1(2) * vp1(2) );
         vp1 *= 1.0 / N;
@@ -2150,9 +2181,9 @@ void LineFeatureTracker::getSphereGrids(vector<KeyLine> cur_keyLine, vector<Vect
             x = ptIntersect(0) / ptIntersect(2);
             y = ptIntersect(1) / ptIntersect(2);
 
-            X = x - pinhole_camera->getParameters().cx();
-            Y = y - pinhole_camera->getParameters().cy();
-            Z = pinhole_camera->getParameters().fx();
+            X = x - PROJ_CX;
+            Y = y - PROJ_CY;
+            Z = PROJ_FX;
             N = sqrt( X * X + Y * Y + Z * Z );
 
             latitude = acos( Z / N );
@@ -2274,10 +2305,10 @@ void LineFeatureTracker::lines2Vps(vector<KeyLine> cur_keyLine, double thAngle, 
     std::vector<cv::Point2d> vp2D( vps_size );
     for ( int i = 0; i < vps_size; ++ i )
     {
-        vp2D[i].x =  vps[i](0) * pinhole_camera->getParameters().fx() /
-                     vps[i](2) + pinhole_camera->getParameters().cx();
-        vp2D[i].y =  vps[i](1) * pinhole_camera->getParameters().fy() /
-                     vps[i](2) + pinhole_camera->getParameters().cy();
+        vp2D[i].x =  vps[i](0) * PROJ_FX /
+                     vps[i](2) + PROJ_CX;
+        vp2D[i].y =  vps[i](1) * PROJ_FY /
+                     vps[i](2) + PROJ_CY;
     }
 
     for ( int i = 0; i < cur_keyLine.size(); ++ i )
@@ -2371,10 +2402,6 @@ void LineFeatureTracker::drawClusters( cv::Mat &img, std::vector<KeyLine> &lines
             cv::line( vp_img, pt_s, pt_e, lineColors[i], 2, cv::LINE_AA );
         }
     }
-    imshow("img", img);
-    imshow("line img", line_img);
-    imshow("vp img", vp_img);
-    waitKey(1);
 }
 
 double LineFeatureTracker::SafeAcos (double x)

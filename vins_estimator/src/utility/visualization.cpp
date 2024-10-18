@@ -20,7 +20,7 @@ ros::Publisher pub_key_poses;
 ros::Publisher pub_camera_pose;
 ros::Publisher pub_camera_pose_visual;
 
-// UV ros::Publisher pub_line_cloud;
+ros::Publisher pub_line_cloud;
 
 nav_msgs::Path path;
 nav_msgs::Path groundtruth_path;
@@ -29,7 +29,6 @@ ros::Publisher pub_keyframe_pose;
 ros::Publisher pub_keyframe_point;
 ros::Publisher pub_extrinsic;
 
-/*
 ros::Publisher pub_keyframe_line, pub_keyframe_line_stereo;
 ros::Publisher pub_keyframe_line_2d;
 ros::Publisher pub_keyframe_2d_3d;
@@ -37,17 +36,17 @@ ros::Publisher pub_line_margin;
 ros::Publisher pub_line_deg;
 ros::Publisher pub_line_array;
 ros::Publisher pub_text;
-*/
+
 ros::Publisher pub_image_track;
 
 CameraPoseVisualization cameraposevisual(1, 0, 0, 1);
-//UV CameraPoseVisualization keyframebasevisual(0.0, 0.0, 1.0, 1.0);
+CameraPoseVisualization keyframebasevisual(0.0, 0.0, 1.0, 1.0);
 static double sum_of_path = 0;
 static Vector3d last_path(0.0, 0.0, 0.0);
 
 size_t pub_counter = 0;
 
-/*
+
 visualization_msgs::Marker key_lines;
 visualization_msgs::Marker map_lines;
 visualization_msgs::Marker margin_lines;
@@ -64,7 +63,7 @@ Point3d prev_ep_3d_w_c1;
 int initial_flag=0;
 double max_dist = 0;
 int num = 4;
-int i = 0;*/
+int i = 0;
 
 void registerPub(ros::NodeHandle &n)
 {
@@ -85,10 +84,20 @@ void registerPub(ros::NodeHandle &n)
     pub_extrinsic = n.advertise<nav_msgs::Odometry>("extrinsic", 1000);
     pub_image_track = n.advertise<sensor_msgs::Image>("image_track", 1000);
 
+    pub_keyframe_line = n.advertise<visualization_msgs::Marker>("keyframe_lines", 1000);
+    pub_keyframe_line_stereo = n.advertise<visualization_msgs::Marker>("keyframe_lines_stereo", 1000);
+    pub_keyframe_line_2d = n.advertise<visualization_msgs::Marker>("keyframe_lines_2d", 1000);
+    pub_line_cloud = n.advertise<visualization_msgs::Marker>("line_cloud", 1000);
+    pub_line_margin = n.advertise<visualization_msgs::Marker>("line_history_cloud", 1000);
+    pub_line_deg = n.advertise<visualization_msgs::Marker>("degenerated_line", 1000);
+    pub_line_array = n.advertise<visualization_msgs::MarkerArray>("line_history_clouds", 1000);
+    pub_text = n.advertise<visualization_msgs::MarkerArray>("line_text",1000);
+    declarePublisher(num, n, pub_margin_line_list);
+
     cameraposevisual.setScale(0.1);
     cameraposevisual.setLineWidth(0.01);
-    // UV keyframebasevisual.setScale(0.1);
-    // UV keyframebasevisual.setLineWidth(0.01);
+    keyframebasevisual.setScale(0.1);
+    keyframebasevisual.setLineWidth(0.01);
 }
 
 void pubLatestOdometry(const Eigen::Vector3d &P, const Eigen::Quaterniond &Q, const Eigen::Vector3d &V, double t)
@@ -434,7 +443,7 @@ void pubGroundTruth(Estimator &estimator, const std_msgs::Header &header, Eigen:
     }
 }
 
-/*
+
 double scale = 1.0;
 void pubLineCloud(const Estimator &estimator, std_msgs::Header &header)
 {
@@ -458,7 +467,8 @@ void pubLineCloud(const Estimator &estimator, std_msgs::Header &header)
     geometry_msgs::Point ep;
 
     for(auto &it_per_id : estimator.f_manager.line_feature)
-    {
+    {   
+        
         if(it_per_id.solve_flag == 1)
         {
             int imu_i = it_per_id.start_frame;
@@ -711,7 +721,7 @@ void pubLineCloud(const Estimator &estimator, std_msgs::Header &header)
     pub_line_margin.publish(margin_lines);
     pub_line_deg.publish(margin_lines_deg);
     publishAll(pub_margin_line_list, margin_line_list);
-}*/
+}
 
 void pubWheelPreintegration(const Eigen::Vector3d& P, const Eigen::Quaterniond& Q,const std_msgs::Header &header)
 {
@@ -1003,7 +1013,7 @@ void pubKeyframe(const Estimator &estimator)
     }
 }
 
-/*UV
+
 void declarePublisher(int num, ros::NodeHandle &n, std::vector<ros::Publisher> &MarkerPublisher)
 {
     for(int i = 0; i < num; i++)
@@ -1128,4 +1138,3 @@ void publishAll(std::vector<ros::Publisher>& MarkerPublishers, std::vector<visua
         MarkerPublishers.at(i).publish(lineLists.at(i));
     }
 }
-*/

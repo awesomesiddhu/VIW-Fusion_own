@@ -38,7 +38,7 @@ void FeatureManager::setRic(Matrix3d _ric[])
 void FeatureManager::clearState()
 {
     feature.clear();
-    //UV line_feature.clear();
+    line_feature.clear();
 }
 
 
@@ -58,7 +58,7 @@ int FeatureManager::getLineFeatureCount()
         cnt++;
 
     }
-//    cout << "getLineFeatureCount: " << cnt << endl;
+    cout << "getLineFeatureCount: " << cnt << endl;
 
     //std::cout << "GETlinefeaturecount #: " << cnt << std::endl;
 

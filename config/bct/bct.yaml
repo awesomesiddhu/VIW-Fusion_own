@@ -18,7 +18,7 @@ cam0_calib: "cam.yaml"
 image_width: 640
 image_height: 480
    
-vanpoint: 1
+#vanpoint: 1
 # Extrinsic parameter between IMU and Camera.
 estimate_extrinsic: 0   # 0  Have an accurate extrinsic parameters. We will trust the following imu^R_cam, imu^T_cam, don't change it.
                         # 1  Have an initial guess about extrinsic parameters. We will optimize around your initial guess.
@@ -60,10 +60,16 @@ body_T_wheel: !!opencv-matrix
         0.0000000,  0.0000000,  1.0000000, -0.275,
          0, 0, 0, 1]
 
-fx: 554.254691191187  # Updated focal length in x direction
-fy: 554.254691191187  # Updated focal length in y direction
-cx: 320.5  # Updated principal point x coordinate
-cy: 240.5  # Updated principal point y coordinate
+distortion_parameters:
+   k1: 0.0
+   k2: 0.0
+   p1: 0.0
+   p2: 0.0
+projection_parameters:
+   fx: 554.254691191187
+   fy: 554.254691191187
+   cx: 320.5 
+   cy: 240.5
 
 #plane noise
 #mono:0.01 stereo:0.005
@@ -128,4 +134,6 @@ load_previous_pose_graph: 0        # load and reuse previous pose graph; load fr
 pose_graph_save_path: "/home/tony-ws1/output/pose_graph/" # save and load path
 save_image: 1                   # save image in pose graph for visualization prupose; you can close this function by setting 0 
 
-
+line_window: 5
+line_factor: 300.0
+vp_factor: 10.0
