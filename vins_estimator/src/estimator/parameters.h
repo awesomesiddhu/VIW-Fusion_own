@@ -33,11 +33,6 @@ extern int ESTIMATE_EXTRINSIC;
 extern int ESTIMATE_EXTRINSIC_WHEEL;
 extern int ESTIMATE_INTRINSIC_WHEEL;
 
-
-extern int LINE_WINDOW;
-extern double LINE_FACTOR;
-extern double VP_FACTOR; 
-
 extern double ACC_N, ACC_W;
 extern double GYR_N, GYR_W;
 
@@ -88,7 +83,6 @@ extern int EQUALIZE;
 extern int USE_IMU;
 extern int USE_WHEEL;
 extern int USE_PLANE;
-extern int USE_VP;
 extern int ONLY_INITIAL_WITH_WHEEL;
 extern int MULTIPLE_THREAD;
 extern double FX,FY,CX,CY;
@@ -107,6 +101,10 @@ extern double F_THRESHOLD;
 extern int SHOW_TRACK;
 extern int FLOW_BACK;
 
+extern int USE_LINE_VP;
+extern int LINE_WINDOW;
+extern double LINE_FACTOR;
+extern double VP_FACTOR; 
 
 extern double PROJ_FX;
 extern double PROJ_FY;

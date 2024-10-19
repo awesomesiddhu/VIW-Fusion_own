@@ -1030,7 +1030,7 @@ void LineFeatureTracker::lineExtraction( Mat &cur_img, vector<LineKL> &keyLine, 
 
     }
 
-    Mat tmp_img3, tmp_img4;
+    /*Mat tmp_img3, tmp_img4;
     cvtColor(forw_img, tmp_img3, CV_GRAY2BGR);
     cvtColor(forw_img, tmp_img4, CV_GRAY2BGR);
     for(int i = 0; i < keyLine.size(); i++)
@@ -1043,7 +1043,7 @@ void LineFeatureTracker::lineExtraction( Mat &cur_img, vector<LineKL> &keyLine, 
     Mat compare;
     hconcat(tmp_img3, tmp_img4, compare);
     imshow("2", compare);
-    waitKey(1);
+    waitKey(1);*/
 
     if(keyLine.size() > 0)
        lineBiDes->compute(cur_img, keyLine, descriptor);
@@ -1055,11 +1055,11 @@ void LineFeatureTracker::lineExtraction( Mat &cur_img, vector<LineKL> &keyLine, 
     // }
 
     /* delete undesired KeyLines, according to input mask and filtering by lenth of a line*/
-    //vector<LineKL>::iterator it_keyLine = keyLine.begin();
-    //int idx = 0;
+    vector<LineKL>::iterator it_keyLine = keyLine.begin();
+    int idx = 0;
 
-    Mat img1;
-    cvtColor(forw_img, img1, CV_GRAY2BGR);
+    //Mat img1;
+    //cvtColor(forw_img, img1, CV_GRAY2BGR);
     
     /*
     double angle_left_min = 0 * M_PI / 180;  // Converting degrees to radians
@@ -1124,6 +1124,7 @@ void LineFeatureTracker::lineExtraction( Mat &cur_img, vector<LineKL> &keyLine, 
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /*Lane detection!!!!!!!!!!!!!!!!!
     KeyLine best_left_lane, best_right_lane;
     double best_left_length = 0, best_right_length = 0;
 
@@ -1174,7 +1175,7 @@ void LineFeatureTracker::lineExtraction( Mat &cur_img, vector<LineKL> &keyLine, 
     }
 
     cv:imshow("Lane detection", img1);
-    cv::waitKey(1);
+    cv::waitKey(1);*/
     
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //    Mat img1 = cur_img.clone();

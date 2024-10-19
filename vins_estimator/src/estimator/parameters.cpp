@@ -67,12 +67,6 @@ int EQUALIZE;
 int USE_IMU;
 int USE_WHEEL;
 int USE_PLANE;
-//int USE_VP;
-
-int LINE_WINDOW;
-int LINE_ONLY;
-double LINE_FACTOR;
-double VP_FACTOR;
 
 int ONLY_INITIAL_WITH_WHEEL;
 int MULTIPLE_THREAD;
@@ -89,15 +83,21 @@ double F_THRESHOLD;
 int SHOW_TRACK;
 int FLOW_BACK;
 
+int USE_LINE_VP;
+int LINE_WINDOW;
+int LINE_ONLY;
+double LINE_FACTOR;
+double VP_FACTOR;
+
 double PROJ_FX;
 double PROJ_FY;
- double PROJ_CX;
- double PROJ_CY;
+double PROJ_CX;
+double PROJ_CY;
 
- double DIST_K1;
- double DIST_K2;
- double DIST_P1;
- double DIST_P2;
+double DIST_K1;
+double DIST_K2;
+double DIST_P1;
+double DIST_P2;
 
 CameraExtrinsicAdjustType CAM_EXT_ADJ_TYPE;
 WheelExtrinsicAdjustType WHEEL_EXT_ADJ_TYPE;
@@ -463,23 +463,35 @@ void readParameters(std::string config_file)
         ESTIMATE_TD_WHEEL = 0;
         printf("no wheel, fix extrinsic and intrinsic param; no time offset calibration\n");
     }
-
-    LINE_WINDOW = fsSettings["line_window"];
-    LINE_FACTOR = fsSettings["line_factor"];
-    VP_FACTOR = fsSettings["vp_factor"];
     
     cv::FileNode PROJ = fsSettings["projection_parameters"];
-    PROJ_FX = PROJ["fx"];
-    PROJ_FY = PROJ["fy"];
-    PROJ_CX = PROJ["cx"];
-    PROJ_CY = PROJ["cy"];
-    FOCAL_LENGTH = PROJ["fx"];
+    PROJ_FX = static_cast<double>(PROJ["fx"]);
+    PROJ_FY = static_cast<double>(PROJ["fy"]);
+    PROJ_CX = static_cast<double>(PROJ["cx"]);
+    PROJ_CY = static_cast<double>(PROJ["cy"]);
+    FOCAL_LENGTH = static_cast<double>(PROJ["fx"]);
 
     cv::FileNode DIST = fsSettings["distortion_parameters"];
-    DIST_K1 = DIST["k1"];
-    DIST_K2 = DIST["k2"];
-    DIST_P1 = DIST["p1"];
-    DIST_P2 = DIST["p2"];
-    
+    DIST_K1 = static_cast<double>(DIST["k1"]);
+    DIST_K2 = static_cast<double>(DIST["k2"]);
+    DIST_P1 = static_cast<double>(DIST["p1"]);
+    DIST_P2 = static_cast<double>(DIST["p2"]);
+
+    USE_LINE_VP = fsSettings["line_van_point"];
+    printf("USE_LINE_VP: %d\n", USE_LINE_VP);
+
+    if(USE_LINE_VP)
+    {
+        LINE_WINDOW = static_cast<int>(fsSettings["line_window"]);
+        LINE_FACTOR = static_cast<double>(fsSettings["line_factor"]);
+        VP_FACTOR = static_cast<double>(fsSettings["vp_factor"]);
+    }
+    else
+    {
+        LINE_WINDOW = 0;
+        LINE_FACTOR = 0;
+        VP_FACTOR = 0;
+    }
+
     fsSettings.release();
 }

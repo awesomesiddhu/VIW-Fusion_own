@@ -224,39 +224,19 @@ void Estimator::inputImage(double t, const cv::Mat &_img, const cv::Mat &_img1)
 
     if(_img1.empty()){
         featureFrame = featureTracker.trackImage(t, _img);
-        lineFrame = lineTrackerData.readImage4Line(_img, t);
-
-        for (const auto& pair : lineFrame) {
-        int key = pair.first;
-        const std::vector<Eigen::Matrix<double, 15, 1>>& matrices = pair.second;
-
-        std::cout << "Key: " << key << std::endl;
-
-        // Iterate through the vector of matrices
-        for (size_t i = 0; i < matrices.size(); ++i) {
-            std::cout << "Matrix " << i + 1 << ":\n";
-            std::cout << matrices[i] << std::endl;
-        }
-    }
-
-        for (unsigned int i = 0;; i++)
-        {
-        // cout << "index i" << i << endl;
-            bool completed = false;
-            for (int j = 0; j < NUM_OF_CAM; j++)
-                if (j != 1 || !STEREO_TRACK)
-                    completed |= lineTrackerData.updateID(i);
-            if (!completed){
-                break;
+        if(USE_LINE_VP){
+            lineFrame = lineTrackerData.readImage4Line(_img, t);
+            for (unsigned int i = 0;; i++){
+            // cout << "index i" << i << endl;
+                bool completed = false;
+                for (int j = 0; j < NUM_OF_CAM; j++)
+                    if (j != 1 || !STEREO_TRACK)
+                        completed |= lineTrackerData.updateID(i);
+                if (!completed){
+                    break;
+                }
             }
         }
-
-        /* VP if(USE_VP){
-           printf("vp detector running \n");
-           printf("Before vp_detector function: %f %f \n", van_point[0],van_point[1]);
-           van_point = vp_detector(_img);
-           printf("After vp_detector function: %f %f \n", van_point[0],van_point[1]);
-        } */
     }
     else
         featureFrame = featureTracker.trackImage(t, _img, _img1);
@@ -583,7 +563,10 @@ void Estimator::processMeasurements()
             pubPointCloud(*this, header);
             pubKeyframe(*this);
             pubTF(*this, header);
-            pubLineCloud(*this, header);
+            if(USE_LINE_VP)
+            {
+                pubLineCloud(*this, header);
+            }
 
             //可视化预积分积分的轨迹
 //            if(USE_WHEEL && solver_flag == NON_LINEAR){
@@ -874,7 +857,10 @@ void Estimator::processImage(const map<int, vector<pair<int, Eigen::Matrix<doubl
         if(!USE_IMU) //当不存在imu时，使用pnp方法进行位姿预测;存在imu时使用imu积分进行预测
             f_manager.initFramePoseByPnP(frame_count, Ps, Rs, tic, ric);
         f_manager.triangulate(frame_count, Ps, Rs, tic, ric);
-        f_manager.triangulateLine(Ps, Rs, tic, ric, latest_img); 
+        if(USE_LINE_VP)
+        {
+            f_manager.triangulateLine(Ps, Rs, tic, ric, latest_img); 
+        }
         optimization();
         set<int> removeIndex;
         outliersRejection(removeIndex);//基于重投影误差，检测外点
@@ -902,7 +888,10 @@ void Estimator::processImage(const map<int, vector<pair<int, Eigen::Matrix<doubl
 
         slideWindow();
         f_manager.removeFailures();
-        f_manager.removeLineFailures();
+        if(USE_LINE_VP)
+        {
+            f_manager.removeLineFailures();
+        }
         // prepare output of VINS
         key_poses.clear();
         for (int i = 0; i <= WINDOW_SIZE; i++)
@@ -1317,22 +1306,25 @@ void Estimator::vector2double()
 
     para_Td[0][0] = td;
     para_Td_wheel[0][0] = td_wheel;
-   
-    vector<Vector4d> get_lineOrtho = f_manager.getLineOrthonormal();
-
-//    cout << "vector2double: " << f_manager.getLineFeatureCount() << endl;
-    for(int i = 0; i < f_manager.getLineFeatureCount(); i++)
+    
+    if(USE_LINE_VP)
     {
-        para_Ortho_plucker[i][0] = get_lineOrtho.at(i)[0];
-        para_Ortho_plucker[i][1] = get_lineOrtho.at(i)[1];
-        para_Ortho_plucker[i][2] = get_lineOrtho.at(i)[2];
-        para_Ortho_plucker[i][3] = get_lineOrtho.at(i)[3];
+        vector<Vector4d> get_lineOrtho = f_manager.getLineOrthonormal();
 
-//        cout << para_Ortho_plucker[i][0] << ", " <<
-//                para_Ortho_plucker[i][1] << ", " <<
-//                para_Ortho_plucker[i][2] << ", " <<
-//                para_Ortho_plucker[i][3] << endl;
-    } 
+    //    cout << "vector2double: " << f_manager.getLineFeatureCount() << endl;
+        for(int i = 0; i < f_manager.getLineFeatureCount(); i++)
+        {
+            para_Ortho_plucker[i][0] = get_lineOrtho.at(i)[0];
+            para_Ortho_plucker[i][1] = get_lineOrtho.at(i)[1];
+            para_Ortho_plucker[i][2] = get_lineOrtho.at(i)[2];
+            para_Ortho_plucker[i][3] = get_lineOrtho.at(i)[3];
+
+    //        cout << para_Ortho_plucker[i][0] << ", " <<
+    //                para_Ortho_plucker[i][1] << ", " <<
+    //                para_Ortho_plucker[i][2] << ", " <<
+    //                para_Ortho_plucker[i][3] << endl;
+        } 
+    }
 }
 
 void Estimator::double2vector()
@@ -1467,23 +1459,25 @@ void Estimator::double2vector()
     }
     */
 //    cout << "double2vector: " << f_manager.getLineFeatureCount() << endl;
-    vector<Vector4d> get_lineOrtho = f_manager.getLineOrthonormal();
-    for(int i =0; i < f_manager.getLineFeatureCount(); i++)
+    if(USE_LINE_VP)
     {
-        get_lineOrtho.at(i)[0] = para_Ortho_plucker[i][0];
-        get_lineOrtho.at(i)[1] = para_Ortho_plucker[i][1];
-        get_lineOrtho.at(i)[2] = para_Ortho_plucker[i][2];
-        get_lineOrtho.at(i)[3] = para_Ortho_plucker[i][3];
+        vector<Vector4d> get_lineOrtho = f_manager.getLineOrthonormal();
+        for(int i =0; i < f_manager.getLineFeatureCount(); i++)
+        {
+            get_lineOrtho.at(i)[0] = para_Ortho_plucker[i][0];
+            get_lineOrtho.at(i)[1] = para_Ortho_plucker[i][1];
+            get_lineOrtho.at(i)[2] = para_Ortho_plucker[i][2];
+            get_lineOrtho.at(i)[3] = para_Ortho_plucker[i][3];
 
-//        cout << para_Ortho_plucker[i][0] << ", " <<
-//            para_Ortho_plucker[i][1] << ", " <<
-//            para_Ortho_plucker[i][2] << ", " <<
-//            para_Ortho_plucker[i][3] << endl;
+    //        cout << para_Ortho_plucker[i][0] << ", " <<
+    //            para_Ortho_plucker[i][1] << ", " <<
+    //            para_Ortho_plucker[i][2] << ", " <<
+    //            para_Ortho_plucker[i][3] << endl;
 
+        }
+    //    f_manager.setOrthoPlucker(get_lineOrtho);
+        f_manager.setLineOrtho(get_lineOrtho, Ps, Rs, tic[0], ric[0]);
     }
-//    f_manager.setOrthoPlucker(get_lineOrtho);
-    f_manager.setLineOrtho(get_lineOrtho, Ps, Rs, tic[0], ric[0]);
-
 }
 
 bool Estimator::failureDetection()
@@ -1546,13 +1540,15 @@ void Estimator::optimization()
     loss_function = new ceres::HuberLoss(1.0); //UV CauchyLoss
     //loss_function = new ceres::CauchyLoss(1.0 / FOCAL_LENGTH);
     //ceres::LossFunction* loss_function = new ceres::HuberLoss(1.0);
-    
     ceres::LossFunction *line_loss_function;
-    line_loss_function = new ceres::CauchyLoss(0.1);
-
     ceres::LossFunction *vp_loss_function;
+    if(USE_LINE_VP)
+    {
+    
+    line_loss_function = new ceres::HuberLoss(0.1);
 //    vp_loss_function = NULL;
-    vp_loss_function = new ceres::CauchyLoss(1.0); 
+    vp_loss_function = new ceres::HuberLoss(1.0); 
+    }
 
     for (int i = 0; i < frame_count + 1; i++)
     {
@@ -1818,70 +1814,72 @@ void Estimator::optimization()
             f_m_cnt++;
         }
     }
-    
-    int line_feature_index = -1;
-    for(auto &it_per_id : f_manager.line_feature)
+    if(USE_LINE_VP)
     {
-        it_per_id.used_num = it_per_id.line_feature_per_frame.size();
-        if(it_per_id.used_num < LINE_WINDOW)
-            continue;
-//        if(it_per_id.solve_flag == 0)
-//            continue;
-
-        ++line_feature_index;
-
-        int imu_i = it_per_id.start_frame, imu_j = imu_i - 1;
-        for (auto &it_per_frame : it_per_id.line_feature_per_frame)
+        int line_feature_index = -1;
+        for(auto &it_per_id : f_manager.line_feature)
         {
-            imu_j++;
+            it_per_id.used_num = it_per_id.line_feature_per_frame.size();
+            if(it_per_id.used_num < LINE_WINDOW)
+                continue;
+    //        if(it_per_id.solve_flag == 0)
+    //            continue;
 
-            Vector3d t_wb(para_Pose[imu_i][0], para_Pose[imu_i][1], para_Pose[imu_i][2]);
-            Quaterniond q_wb(para_Pose[imu_i][6], para_Pose[imu_i][3], para_Pose[imu_i][4], para_Pose[imu_i][5]);
+            ++line_feature_index;
 
-            AngleAxisd roll(para_Ortho_plucker[line_feature_index][0], Vector3d::UnitX());
-            AngleAxisd pitch(para_Ortho_plucker[line_feature_index][1], Vector3d::UnitY());
-            AngleAxisd yaw(para_Ortho_plucker[line_feature_index][2], Vector3d::UnitZ());
-
-            double pi = para_Ortho_plucker[line_feature_index][3];
-
-            Matrix<double, 3, 3, RowMajor> Rotation_psi;
-            Rotation_psi = roll * pitch * yaw;
-            Vector3d n_w = cos(pi) * Rotation_psi.block<3,1>(0,0);
-            Vector3d d_w = sin(pi) * Rotation_psi.block<3,1>(0,1);
-
-            Matrix<double, 6, 1> l_w;
-            l_w.block<3,1>(0,0) = n_w;
-            l_w.block<3,1>(3,0) = d_w;
-
-            Matrix3d R_wc = q_wb * ric[0];
-            Vector3d t_wc = q_wb * tic[0] + t_wb;
-
-            Matrix<double, 6, 6> T_cw;
-            T_cw.setZero();
-            T_cw.block<3,3>(0,0) = R_wc.transpose();
-            T_cw.block<3,3>(0,3) = Utility::skewSymmetric(-R_wc.transpose() * t_wc) * R_wc.transpose();
-            T_cw.block<3,3>(3,3) = R_wc.transpose();
-
-            Matrix<double, 6, 1> l_c = T_cw * l_w;
-            Vector3d n_c = l_c.block<3,1>(0,0);
-            Vector3d d_c = l_c.block<3,1>(3,0);
-
-            ceres::CostFunction* cost_function = new ceres::AutoDiffCostFunction<LineProjectionFactor, 2, 7, 4>
-                (new LineProjectionFactor(ric[0], tic[0], it_per_frame.start_point, it_per_frame.end_point));
-            problem.AddResidualBlock(cost_function, line_loss_function, para_Pose[imu_j], para_Ortho_plucker[line_feature_index]);
-
-            if(it_per_frame.vp(2) == 1)
+            int imu_i = it_per_id.start_frame, imu_j = imu_i - 1;
+            for (auto &it_per_frame : it_per_id.line_feature_per_frame)
             {
-//                cout << it_per_frame.vp(2) << endl;
-                ceres::CostFunction* cost_function = new ceres::AutoDiffCostFunction<VPProjectionFactor, 1, 7, 4>
-                        (new VPProjectionFactor(ric[0], tic[0], it_per_frame.start_point, it_per_frame.end_point, it_per_frame.vp));
-                problem.AddResidualBlock(cost_function, vp_loss_function, para_Pose[imu_j], para_Ortho_plucker[line_feature_index]);
+                imu_j++;
 
-//                cout << "---------------" << endl;
-//                cout << it_per_frame.vp.x() << ", " <<
-//                        it_per_frame.vp.y() << ", " << endl;
+                Vector3d t_wb(para_Pose[imu_i][0], para_Pose[imu_i][1], para_Pose[imu_i][2]);
+                Quaterniond q_wb(para_Pose[imu_i][6], para_Pose[imu_i][3], para_Pose[imu_i][4], para_Pose[imu_i][5]);
 
-//                cout << d_c(0)/d_c(2) << ", " << d_c(1)/d_c(2) << endl;
+                AngleAxisd roll(para_Ortho_plucker[line_feature_index][0], Vector3d::UnitX());
+                AngleAxisd pitch(para_Ortho_plucker[line_feature_index][1], Vector3d::UnitY());
+                AngleAxisd yaw(para_Ortho_plucker[line_feature_index][2], Vector3d::UnitZ());
+
+                double pi = para_Ortho_plucker[line_feature_index][3];
+
+                Matrix<double, 3, 3, RowMajor> Rotation_psi;
+                Rotation_psi = roll * pitch * yaw;
+                Vector3d n_w = cos(pi) * Rotation_psi.block<3,1>(0,0);
+                Vector3d d_w = sin(pi) * Rotation_psi.block<3,1>(0,1);
+
+                Matrix<double, 6, 1> l_w;
+                l_w.block<3,1>(0,0) = n_w;
+                l_w.block<3,1>(3,0) = d_w;
+
+                Matrix3d R_wc = q_wb * ric[0];
+                Vector3d t_wc = q_wb * tic[0] + t_wb;
+
+                Matrix<double, 6, 6> T_cw;
+                T_cw.setZero();
+                T_cw.block<3,3>(0,0) = R_wc.transpose();
+                T_cw.block<3,3>(0,3) = Utility::skewSymmetric(-R_wc.transpose() * t_wc) * R_wc.transpose();
+                T_cw.block<3,3>(3,3) = R_wc.transpose();
+
+                Matrix<double, 6, 1> l_c = T_cw * l_w;
+                Vector3d n_c = l_c.block<3,1>(0,0);
+                Vector3d d_c = l_c.block<3,1>(3,0);
+
+                ceres::CostFunction* cost_function = new ceres::AutoDiffCostFunction<LineProjectionFactor, 2, 7, 4>
+                    (new LineProjectionFactor(ric[0], tic[0], it_per_frame.start_point, it_per_frame.end_point));
+                problem.AddResidualBlock(cost_function, line_loss_function, para_Pose[imu_j], para_Ortho_plucker[line_feature_index]);
+
+                if(it_per_frame.vp(2) == 1)
+                {
+    //                cout << it_per_frame.vp(2) << endl;
+                    ceres::CostFunction* cost_function = new ceres::AutoDiffCostFunction<VPProjectionFactor, 1, 7, 4>
+                            (new VPProjectionFactor(ric[0], tic[0], it_per_frame.start_point, it_per_frame.end_point, it_per_frame.vp));
+                    problem.AddResidualBlock(cost_function, vp_loss_function, para_Pose[imu_j], para_Ortho_plucker[line_feature_index]);
+
+    //                cout << "---------------" << endl;
+    //                cout << it_per_frame.vp.x() << ", " <<
+    //                        it_per_frame.vp.y() << ", " << endl;
+
+    //                cout << d_c(0)/d_c(2) << ", " << d_c(1)/d_c(2) << endl;
+                }
             }
         }
     }
@@ -2037,7 +2035,8 @@ void Estimator::optimization()
                 }
             }
         }
-        /*
+        if(USE_LINE_VP)
+        {
         {
             int line_feature_index=-1;
             for(auto &it_per_id : f_manager.line_feature)
@@ -2085,8 +2084,8 @@ void Estimator::optimization()
                     }
                 }
             }
-        }*/
-
+        }
+        }
         TicToc t_pre_margin;
         marginalization_info->preMarginalize();
         ROS_DEBUG("pre marginalization %f ms", t_pre_margin.toc());

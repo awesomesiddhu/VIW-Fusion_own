@@ -122,7 +122,8 @@ bool FeatureManager::addFeatureCheckParallax(int frame_count, const map<int, vec
                 long_track_num++;
         }
     }
-
+    if(USE_LINE_VP)
+    {
     unsigned int num_tracked_line = 0;
     for (auto &id_lines : image_line)
     {
@@ -148,6 +149,7 @@ bool FeatureManager::addFeatureCheckParallax(int frame_count, const map<int, vec
             // ADDED CODE
             it->max_num = it->max_num+1;
         }
+    }
     }
     //if (frame_count < 2 || last_track_num < 20)
     //if (frame_count < 2 || last_track_num < 20 || new_feature_num > 0.5 * last_track_num)

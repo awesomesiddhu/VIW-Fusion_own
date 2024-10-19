@@ -575,7 +575,7 @@ void pubLineCloud(const Estimator &estimator, std_msgs::Header &header)
     margin_lines.lifetime = ros::Duration(0);
 
     margin_lines.scale.x = 0.1;
-    margin_lines.color.r = 0.0;
+    margin_lines.color.r = 1.0;
     margin_lines.color.g = 0.0;
     margin_lines.color.b = 0.0;
     margin_lines.color.a = 1.0;
@@ -703,7 +703,7 @@ void pubLineCloud(const Estimator &estimator, std_msgs::Header &header)
     }
     pub_text.publish(text_array);
 
-    float max_dist = 45; //Need tuning, MH:45 VR:10
+    float max_dist = 60; //Need tuning, MH:45 VR:10
     for(int i = 0; i < points.size()/2; i++)
     {
         float mid_dist = sqrt(pow(points.at(i*2).x, 2) +

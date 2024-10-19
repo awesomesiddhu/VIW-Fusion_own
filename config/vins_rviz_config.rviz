@@ -294,6 +294,22 @@ Visualization Manager:
           Transport Hint: raw
           Unreliable: false
           Value: true
+        - Class: rviz/Marker
+          Enabled: true
+          Marker Topic: /vins_estimator/line_cloud
+          Name: current_line
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: true
+        - Class: rviz/Marker
+          Enabled: true
+          Marker Topic: /vins_estimator/line_history_cloud
+          Name: history_line
+          Namespaces:
+            {}
+          Queue Size: 100
+          Value: true
       Enabled: true
       Name: VIOGroup
     - Class: rviz/Group

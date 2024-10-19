@@ -7,6 +7,7 @@ num_of_cam: 1
 only_initial_with_wheel: 0 #use wheel only for initialization and do not add to factor graph
 plane: 1
 wheel: 1
+line_van_point: 1
 
 imu_topic: "/imu"
 wheel_topic: "/odom"  
@@ -59,17 +60,6 @@ body_T_wheel: !!opencv-matrix
          0.000,  1.000,  0.0000000, 0.00,
         0.0000000,  0.0000000,  1.0000000, -0.275,
          0, 0, 0, 1]
-
-distortion_parameters:
-   k1: 0.0
-   k2: 0.0
-   p1: 0.0
-   p2: 0.0
-projection_parameters:
-   fx: 554.254691191187
-   fy: 554.254691191187
-   cx: 320.5 
-   cy: 240.5
 
 #plane noise
 #mono:0.01 stereo:0.005
@@ -134,6 +124,18 @@ load_previous_pose_graph: 0        # load and reuse previous pose graph; load fr
 pose_graph_save_path: "/home/tony-ws1/output/pose_graph/" # save and load path
 save_image: 1                   # save image in pose graph for visualization prupose; you can close this function by setting 0 
 
+# Line and Vanishing Point:
 line_window: 5
 line_factor: 300.0
 vp_factor: 10.0
+
+distortion_parameters:
+   k1: 0.0
+   k2: 0.0
+   p1: 0.0
+   p2: 0.0
+projection_parameters:
+   fx: 554.254691191187
+   fy: 554.254691191187
+   cx: 320.5 
+   cy: 240.5
