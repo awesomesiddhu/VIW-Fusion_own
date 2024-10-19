@@ -565,18 +565,6 @@ void Estimator::processMeasurements()
             }
             mProcess.lock();
             
-            for (const auto& pair : std::get<0>(feature)) {
-                int key = pair.first;
-                const std::vector<Eigen::Matrix<double, 15, 1>>& matrices = pair.second;
-
-                std::cout << "KeyFeature: " << key << std::endl;
-
-                // Iterate through the vector of matrices
-                for (size_t i = 0; i < matrices.size(); ++i) {
-                    std::cout << "MatrixFeature " << i + 1 << ":\n";
-                    std::cout << matrices[i] << std::endl;
-                }
-            }
             processImage(std::get<1>(feature), std::get<2>(feature), std::get<0>(feature)); //feature[2] which is imageline
             prevTime = curTime;
             prevTime_wheel = curTime_wheel;

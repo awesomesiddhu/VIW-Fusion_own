@@ -1002,7 +1002,8 @@ void LineFeatureTracker::lineExtraction( Mat &cur_img, vector<LineKL> &keyLine, 
     upm::Segments segs = elsed.detect(forw_img);
     //cout<< t_r.toc() << endl;
     //cout << t1 << " , " << t2 << endl;
-    Mat tmp_img1, tmp_img2;
+    /*
+    Mat tmp_img1, tmp_img2;keyLine
     cvtColor(forw_img, tmp_img1, CV_GRAY2BGR);
     cvtColor(forw_img, tmp_img2, CV_GRAY2BGR);
     for(int i = 0; i < forw_keyLine.size(); i++)
@@ -1016,7 +1017,7 @@ void LineFeatureTracker::lineExtraction( Mat &cur_img, vector<LineKL> &keyLine, 
     hconcat(tmp_img1, tmp_img2, compare);
     imshow("1", compare);
     waitKey(1);
-
+    */
     int line_id = 0;
     for(unsigned int i = 0; i < segs.size(); i++)
     {
@@ -1028,6 +1029,22 @@ void LineFeatureTracker::lineExtraction( Mat &cur_img, vector<LineKL> &keyLine, 
         keyLine.push_back(kl);
 
     }
+
+    Mat tmp_img3, tmp_img4;
+    cvtColor(forw_img, tmp_img3, CV_GRAY2BGR);
+    cvtColor(forw_img, tmp_img4, CV_GRAY2BGR);
+    for(int i = 0; i < keyLine.size(); i++)
+        line(tmp_img3, keyLine[i].getStartPoint(), keyLine[i].getEndPoint(), Scalar(0,255,0), 2);
+    for(int i = 0; i < segs.size(); i++)
+    {
+        upm::Segment seg = segs[i];
+        line(tmp_img4, cv::Point2f(seg[0], seg[1]), cv::Point2f(seg[2], seg[3]), Scalar(0,255,0), 2);
+    }
+    Mat compare;
+    hconcat(tmp_img3, tmp_img4, compare);
+    imshow("2", compare);
+    waitKey(1);
+
     if(keyLine.size() > 0)
        lineBiDes->compute(cur_img, keyLine, descriptor);
 
@@ -1038,10 +1055,128 @@ void LineFeatureTracker::lineExtraction( Mat &cur_img, vector<LineKL> &keyLine, 
     // }
 
     /* delete undesired KeyLines, according to input mask and filtering by lenth of a line*/
-    vector<LineKL>::iterator it_keyLine = keyLine.begin();
-    int idx = 0;
+    //vector<LineKL>::iterator it_keyLine = keyLine.begin();
+    //int idx = 0;
+
+    Mat img1;
+    cvtColor(forw_img, img1, CV_GRAY2BGR);
+    
+    /*
+    double angle_left_min = 0 * M_PI / 180;  // Converting degrees to radians
+    double angle_left_max = 90 * M_PI / 180;
+    double angle_right_min = 90 * M_PI / 180;
+    double angle_right_max = 180 * M_PI / 180;
+    double length_threshold = 100; //400
+
+    for (int i = 0; i < int(keyLine.size()); i++) {
+        KeyLine kl1 = keyLine[i];
+        for (int j = i + 1; j < int(keyLine.size()); j++) {
+            KeyLine kl2 = keyLine[j];
+
+            // Check if both lines are in the bottom half (y-coordinates > 240)
+            bool kl1_in_bottom_half = kl1.startPointY > 200 && kl1.endPointY > 200;
+            bool kl2_in_bottom_half = kl2.startPointY > 200 && kl2.endPointY > 200;
+
+            // Check if both lines have lengths greater than the threshold
+            bool kl1_length_ok = kl1.lineLength > length_threshold;
+            bool kl2_length_ok = kl2.lineLength > length_threshold;
+
+            if (kl1_in_bottom_half && kl2_in_bottom_half && kl1_length_ok && kl2_length_ok) { //
+                // Determine if the lines are in the left or right bottom half
+                //bool kl1_in_left_half = kl1.startPointX < 350 && kl1.endPointX < 350;
+                //bool kl2_in_left_half = kl2.startPointX < 350 && kl2.endPointX < 350;
+                //bool kl1_in_right_half = kl1.startPointX >= 290 && kl1.endPointX >= 290;
+                //bool kl2_in_right_half = kl2.startPointX >= 290 && kl2.endPointX >= 290;
+
+                // Check angles if they are in the left half
+                //if (kl1_in_left_half && kl2_in_left_half) {
+                    bool kl1_angle_ok = (kl1.angle >= 0.3 && kl1.angle <= 0.7)||(kl1.angle >= -0.7 && kl1.angle <= -0.3);
+                    bool kl2_angle_ok = (kl2.angle >= 0.3 && kl2.angle <= 0.7)||(kl2.angle >= -0.7 && kl2.angle <= -0.3);
+                    if (kl1_angle_ok && kl2_angle_ok) {
+                        // Both keylines are valid and in the left bottom half with proper angles
+                        line(img1, kl1.getStartPoint(), kl1.getEndPoint(), Scalar(255, 0, 0), 2);  // Draw kl1 in red
+                        line(img1, kl2.getStartPoint(), kl2.getEndPoint(), Scalar(255, 0, 0), 2);  // Draw kl2 in red
+                        printf("angle1%f\n", kl1.angle);
+                        printf("angle2%f\n", kl2.angle);
+                //    }
+                }
+
+                // Check angles if they are in the right half
+                /*if (kl1_in_right_half && kl2_in_right_half) {
+                    bool kl1_angle_ok = (kl1.angle >= angle_right_min && kl1.angle <= angle_right_max);
+                    bool kl2_angle_ok = (kl2.angle >= angle_right_min && kl2.angle <= angle_right_max);
+                    if (kl1_angle_ok && kl2_angle_ok) {
+                        // Both keylines are valid and in the right bottom half with proper angles
+                        line(img1, kl1.getStartPoint(), kl1.getEndPoint(), Scalar(0, 255, 0), 2);  // Draw kl1 in green
+                        line(img1, kl2.getStartPoint(), kl2.getEndPoint(), Scalar(0, 255, 0), 2);  // Draw kl2 in green
+                    }
+                }
+            
+            }
+            
+        }
+    }
+
+    cv:imshow("Lane detection", img1);
+    cv::waitKey(1);
+    */
 
 
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    KeyLine best_left_lane, best_right_lane;
+    double best_left_length = 0, best_right_length = 0;
+
+    double angle_left_min = -M_PI / 4;  // -45 degrees in radians
+    double angle_left_max = -M_PI / 9;          // 20 degrees
+    double angle_right_min = M_PI / 9;         // 20 degrees
+    double angle_right_max = M_PI / 4;  // 45 degrees
+
+    double length_threshold = 100;      // Threshold for line length
+
+    // Iterate over all detected lines
+    for (int i = 0; i < int(keyLine.size()); i++) {
+        KeyLine kl = keyLine[i];
+
+        // Check if the line is in the bottom half and its length is above the threshold
+        bool kl_in_bottom_half = kl.startPointY > 200 && kl.endPointY > 200;
+        bool kl_length_ok = kl.lineLength > length_threshold;
+
+        if (kl_in_bottom_half && kl_length_ok) {
+            // Check for left lane based on angle
+            if (kl.angle >= angle_left_min && kl.angle <= angle_left_max && kl.lineLength > best_left_length) {
+                best_left_lane = kl;
+                best_left_length = kl.lineLength;
+            }
+            // Check for right lane based on angle
+            else if (kl.angle >= angle_right_min && kl.angle <= angle_right_max && kl.lineLength > best_right_length) {
+                best_right_lane = kl;
+                best_right_length = kl.lineLength;
+            }
+        }
+    }
+
+    // Draw the best left and right lanes if valid
+    if (best_left_length > 0) {
+        bool is_left_lane_valid = best_left_lane.getEndPoint().x < img1.cols / 2;
+        if (is_left_lane_valid) {
+            line(img1, best_left_lane.getStartPoint(), best_left_lane.getEndPoint(), Scalar(255, 0, 0), 2);
+            printf("Left Lane Angle: %f\n", best_left_lane.angle);
+        }
+    }
+
+    if (best_right_length > 0) {
+        bool is_right_lane_valid = best_right_lane.getEndPoint().x > img1.cols / 2;
+        if (is_right_lane_valid) {
+            line(img1, best_right_lane.getStartPoint(), best_right_lane.getEndPoint(), Scalar(0, 255, 0), 2);
+            printf("Right Lane Angle: %f\n", best_right_lane.angle);
+        }
+    }
+
+    cv:imshow("Lane detection", img1);
+    cv::waitKey(1);
+    
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //    Mat img1 = cur_img.clone();
 //    Mat img2 = cur_img.clone();
 
