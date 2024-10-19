@@ -121,8 +121,10 @@ void sync_process()
                 img0_buf.pop();
             }
             m_buf.unlock();
-            if(!image.empty())
+            if(!image.empty()){
                 estimator.inputImage(time, image);
+                estimator.latest_img = image;
+            }
         }
 
         std::chrono::milliseconds dura(2);

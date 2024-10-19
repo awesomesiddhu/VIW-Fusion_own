@@ -12,8 +12,6 @@
 #include "../factor/pose_subset_parameterization.h"
 #include "../factor/orientation_subset_parameterization.h"
 
-// VP std::vector<double> van_point(2);
-
 Estimator::Estimator(): f_manager{Rs}
 {
     ROS_INFO("init begins");
@@ -2037,7 +2035,6 @@ void Estimator::optimization()
         }
         if(USE_LINE_VP)
         {
-        {
             int line_feature_index=-1;
             for(auto &it_per_id : f_manager.line_feature)
             {
@@ -2084,7 +2081,6 @@ void Estimator::optimization()
                     }
                 }
             }
-        }
         }
         TicToc t_pre_margin;
         marginalization_info->preMarginalize();
@@ -2348,7 +2344,10 @@ void Estimator::slideWindowNew()
 {
     sum_of_front++;
     f_manager.removeFront(frame_count);
+    if(USE_LINE_VP)
+    {
     f_manager.removeLineFront(frame_count);
+    }
 }
 
 void Estimator::slideWindowOld()
@@ -2367,8 +2366,13 @@ void Estimator::slideWindowOld()
         f_manager.removeBackShiftDepth(R0, P0, R1, P1);
     }
     else
+    {
         f_manager.removeBack();  //初始化未完成，只是更新第一次观测到路标点的图像帧的索引
-    f_manager.removeLineBack();
+    }
+    if(USE_LINE_VP)
+    {
+        f_manager.removeLineBack();
+    }
 }
 
 
