@@ -43,6 +43,8 @@ extern int IMAGE_ROW, IMAGE_COL;
 
 extern ros::Publisher pub_text;
 
+extern ros::Publisher pub_lane_odometry;
+
 void registerPub(ros::NodeHandle &n);
 
 void pubLatestOdometry(const Eigen::Vector3d &P, const Eigen::Quaterniond &Q, const Eigen::Vector3d &V, double t);
@@ -83,3 +85,5 @@ void pubKeyframe(const Estimator &estimator);
 void pubRelocalization(const Estimator &estimator);
 
 void pubCar(const Estimator & estimator, const std_msgs::Header &header);
+
+void pubLaneOdometry(const Estimator & estimator, const std_msgs::Header &header, double odom_y, double odom_theta);

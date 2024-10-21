@@ -36,6 +36,8 @@ Estimator::~Estimator()
     {
         processThread.join();
         printf("join thread \n");
+        processLaneThread.join();
+        printf("join lane thread \n");
     }
 }
 
@@ -54,10 +56,20 @@ void Estimator::clearState()
     while(!wheelGyrBuf.empty())
         wheelGyrBuf.pop();
 
+    while(!keyLinesBuf.empty())
+        keyLinesBuf.pop();
+
     prevTime = -1;
     prevTime_wheel = -1;
     curTime = 0;
     curTime_wheel = 0;
+
+    prevLaneTime = -1;
+    curLaneTime = 0;
+
+    prev_offset = 0.0;
+    prev_angle_difference_degrees = 0.0;
+
     openExEstimation = 0;
     openPlaneEstimation = 0;
     openExWheelEstimation = 0;
@@ -171,6 +183,7 @@ void Estimator::setParameter()
     {
         initThreadFlag = true;
         processThread = std::thread(&Estimator::processMeasurements, this);
+        processLaneThread = std::thread(&Estimator::processLane, this);
     }
     mProcess.unlock();
 }
@@ -218,12 +231,18 @@ void Estimator::inputImage(double t, const cv::Mat &_img, const cv::Mat &_img1)
     inputImageCnt++;
     map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> featureFrame;
     map<int, vector<Eigen::Matrix<double, 15, 1>>> lineFrame;
+    std::pair<std::map<int, std::vector<Eigen::Matrix<double, 15, 1>>>, std::vector<LineKL>> line_out;
+    std::vector<LineKL> kls;
+
     TicToc featureTrackerTime;
 
     if(_img1.empty()){
         featureFrame = featureTracker.trackImage(t, _img);
         if(USE_LINE_VP){
-            lineFrame = lineTrackerData.readImage4Line(_img, t);
+            line_out = lineTrackerData.readImage4Line(_img, t);
+            lineFrame  = line_out.first;
+            keyLinesBuf.push(make_pair(t, line_out.second));
+
             for (unsigned int i = 0;; i++){
             // cout << "index i" << i << endl;
                 bool completed = false;
@@ -584,6 +603,195 @@ void Estimator::processMeasurements()
         std::this_thread::sleep_for(dura);
     }
 }
+bool Estimator::KeyLinesAvailable(double t)
+{
+    if(!keyLinesBuf.empty() && t <= keyLinesBuf.back().first)
+        return true;
+    else
+        return false;
+}
+void Estimator::processLane()
+{   
+    while (1)
+    {
+        std::pair<double, std::vector<LineKL>> keyLines;
+        printf("processing lines for lane\n");
+        if(!keyLinesBuf.empty())
+        {
+            keyLines = keyLinesBuf.front();
+            curLaneTime = keyLines.first + td;
+            while(1)
+            {
+                if ((!USE_LANE  || KeyLinesAvailable(keyLines.first + td)))
+                    break;
+                else
+                {
+                    printf("wait for lane ... \n");
+                    if (! MULTIPLE_THREAD)
+                        return;
+                    std::chrono::milliseconds dura(5);
+                    std::this_thread::sleep_for(dura);
+                }
+            }
+            
+            mBuf.lock();
+            if (USE_LANE) {
+                keyLinesBuf.pop();
+            }
+            mBuf.unlock();
+            
+            mProcess.lock();
+            if (USE_LANE) {
+                
+            lane_odom = processKLs(keyLines.second, keyLines.first);
+            lane_y = lane_odom.first;
+            lane_theta = lane_odom.second;
+            prevLaneTime = curLaneTime;
+            
+            //printStatistics(*this, 0);
+            
+            std_msgs::Header header;
+            header.frame_id = "world";
+            header.stamp = ros::Time(keyLines.first);
+            
+            pubLaneOdometry(*this, header, lane_y, lane_theta);
+            }
+            mProcess.unlock();
+        }
+
+        if (! MULTIPLE_THREAD)
+            break;
+
+        std::chrono::milliseconds dura(2);
+        std::this_thread::sleep_for(dura);
+    }
+}
+
+std::pair<double, double> Estimator::processKLs(std::vector<LineKL> KLs, double t)
+{
+    Mat image;
+    cvtColor(latest_img, image, CV_GRAY2BGR);
+
+    KeyLine best_left_lane, best_right_lane;
+    double best_left_length = 0, best_right_length = 0; // if it remains 
+
+    double angle_left_min = -M_PI / 4;  // -45 degrees in radians
+    double angle_left_max = -M_PI / 9;          // 20 degrees
+    double angle_right_min = M_PI / 9;         // 20 degrees
+    double angle_right_max = M_PI / 4;  // 45 degrees
+
+    double length_threshold = 100;      // Threshold for line length
+
+    // Iterate over all detected lines
+    for (int i = 0; i < int(KLs.size()); i++) { //Merge similar lines as preprocessing before finding best!
+        KeyLine kl = KLs[i];
+
+        // Check if the line is in the bottom half and its length is above the threshold
+        bool kl_in_bottom_half = kl.startPointY > 200 && kl.endPointY > 200;
+        bool kl_length_ok = kl.lineLength > length_threshold;
+
+        if (kl_in_bottom_half && kl_length_ok) {
+            // Check for left lane based on angle
+            if (kl.angle >= angle_left_min && kl.angle <= angle_left_max && kl.lineLength > best_left_length && kl.getEndPoint().x < image.cols/2) {
+                best_left_lane = kl;
+                best_left_length = kl.lineLength;
+            }
+            // Check for right lane based on angle
+            else if (kl.angle >= angle_right_min && kl.angle <= angle_right_max && kl.lineLength > best_right_length && kl.getEndPoint().x > image.cols/2) {
+                best_right_lane = kl;
+                best_right_length = kl.lineLength;
+            }
+        }
+    }
+
+    // Draw the best left and right lanes if valid
+    if (best_left_length > 0 && best_right_length > 0) {
+        line(image, best_left_lane.getStartPoint(), best_left_lane.getEndPoint(), Scalar(255, 0, 0), 2);
+        line(image, best_right_lane.getStartPoint(), best_right_lane.getEndPoint(), Scalar(0, 255, 0), 2);
+
+        Point2f midpoint_left(
+            (best_left_lane.startPointX + best_left_lane.endPointX) / 2.0f,
+            (best_left_lane.startPointY + best_left_lane.endPointY) / 2.0f
+        );
+
+        Point2f midpoint_right(
+            (best_right_lane.startPointX + best_right_lane.endPointX) / 2.0f,
+            (best_right_lane.startPointY + best_right_lane.endPointY) / 2.0f
+        );
+
+        // Calculate the center line between the left and right lane lines
+        Point2f center_lane(
+            (midpoint_left.x + midpoint_right.x) / 2.0f,
+            (midpoint_left.y + midpoint_right.y) / 2.0f
+        );
+
+        // Find the center of the image
+        int image_center_x = image.cols / 2;
+        int image_center_y = image.rows / 2;
+        Point2f image_center(image_center_x, image_center_y);
+
+        // Compute the offset between the center of the image and the center of the lane
+        float offset = center_lane.x - image_center_x;
+
+        // Draw the lane lines and center line for visualization
+        line(image, Point(best_left_lane.startPointX, best_left_lane.startPointY), 
+                    Point(best_left_lane.endPointX, best_left_lane.endPointY), Scalar(0, 0, 255), 2);  // Red: left lane
+
+        line(image, Point(best_right_lane.startPointX, best_right_lane.startPointY), 
+                    Point(best_right_lane.endPointX, best_right_lane.endPointY), Scalar(0, 255, 0), 2); // Green: right lane
+
+        // Draw the center line in blue
+        line(image, Point((best_left_lane.startPointX+best_right_lane.endPointX)/2.0, (best_left_lane.startPointY+best_right_lane.endPointY)/2.0), 
+                    Point((best_left_lane.endPointX+best_right_lane.startPointX)/2.0, (best_left_lane.endPointY+best_right_lane.startPointY)/2.0), Scalar(255, 0, 0), 2); // Blue: center line
+
+        // Draw the image center
+        circle(image, image_center, 5, Scalar(0, 255, 255), -1); // Yellow: image center
+
+        // Draw the center of the lane
+        circle(image, center_lane, 5, Scalar(255, 255, 0), -1); // Cyan: center of the lane
+
+        // Calculate the angle of the vertical line (center of the image)
+        Point2f vertical_line_start(image_center_x, 0);  // top of the image
+        Point2f vertical_line_end(image_center_x, image.rows);  // bottom of the image
+
+        // Angle of the vertical center line (should be 90 degrees or pi/2 radians)
+        float vertical_line_angle = atan2(vertical_line_end.y - vertical_line_start.y,
+                                        vertical_line_end.x - vertical_line_start.x);
+
+        // Angle of the center line between the left and right lane lines
+        float center_line_angle = atan2((best_right_lane.endPointY + best_left_lane.endPointY)/2.0 - (best_right_lane.startPointY + best_left_lane.startPointY)/2.0,
+                                        best_right_lane.endPointX + best_left_lane.endPointX)/2.0 - (best_right_lane.startPointX + best_left_lane.startPointX)/2.0;
+
+        // Calculate the absolute difference in angle (in radians)
+        float angle_difference = center_line_angle - vertical_line_angle;
+
+        // Convert angle difference from radians to degrees
+        float angle_difference_degrees = angle_difference * (180.0 / CV_PI);
+
+        // Show the offset value and the angle difference
+        // Show the offset value
+        std::cout << "Offset from lane center: " << offset << " pixels" << std::endl;        
+        std::cout << "Angle difference between lane center line and vertical center line: " << angle_difference_degrees << " degrees" << std::endl;
+
+        // Display the image with lane lines and centers
+        imshow("Lane Detection with Center Offset", image);
+        waitKey(1);
+
+        double odom_y = offset - prev_offset;
+        double odom_theta = angle_difference_degrees - prev_angle_difference_degrees;
+
+        prev_offset = odom_y;
+        prev_angle_difference_degrees = angle_difference_degrees;
+
+        return std::make_pair(odom_y, odom_theta);
+    }
+    else
+    {
+        return std::make_pair(-1.0, -1.0);
+    }
+
+}
+
 
 //利用重力信息，初始化最开始状态中的旋转矩阵
 void Estimator::initFirstIMUPose(vector<pair<double, Eigen::Vector3d>> &accVector)

@@ -239,4 +239,17 @@ class Estimator
     bool initThreadFlag;
 
     cv::Mat latest_img;
+
+    std::thread processLaneThread;
+    void processLane();
+    bool KeyLinesAvailable(double t);
+    std::pair<double, double> processKLs(std::vector<LineKL> KLs, double t);
+    queue<std::pair<double, std::vector<LineKL>>> keyLinesBuf;
+    double prevLaneTime, curLaneTime;
+
+    double prev_offset;
+    double prev_angle_difference_degrees;
+
+    std::pair<double, double> lane_odom;
+    double lane_y, lane_theta;
 };

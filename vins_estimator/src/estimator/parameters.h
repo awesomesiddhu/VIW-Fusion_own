@@ -116,6 +116,8 @@ extern double DIST_K2;
 extern double DIST_P1;
 extern double DIST_P2;
 
+extern int USE_LANE;
+
 void readParameters(std::string config_file);
 
 enum SIZE_PARAMETERIZATION

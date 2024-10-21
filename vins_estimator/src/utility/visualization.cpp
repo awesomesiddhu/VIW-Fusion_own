@@ -39,6 +39,8 @@ ros::Publisher pub_text;
 
 ros::Publisher pub_image_track;
 
+ros::Publisher pub_lane_odometry;
+
 CameraPoseVisualization cameraposevisual(1, 0, 0, 1);
 CameraPoseVisualization keyframebasevisual(0.0, 0.0, 1.0, 1.0);
 static double sum_of_path = 0;
@@ -93,6 +95,8 @@ void registerPub(ros::NodeHandle &n)
     pub_line_array = n.advertise<visualization_msgs::MarkerArray>("line_history_clouds", 1000);
     pub_text = n.advertise<visualization_msgs::MarkerArray>("line_text",1000);
     declarePublisher(num, n, pub_margin_line_list);
+
+    pub_lane_odometry= n.advertise<nav_msgs::Odometry>("lane_odometry", 1000);
 
     cameraposevisual.setScale(0.1);
     cameraposevisual.setLineWidth(0.01);
@@ -1013,6 +1017,16 @@ void pubKeyframe(const Estimator &estimator)
     }
 }
 
+void pubLaneOdometry(const Estimator &estimator, const std_msgs::Header &header, double odom_y, double odom_theta)
+{
+    nav_msgs::Odometry odometry;
+    odometry.header = header;
+    odometry.header.frame_id = "world";
+    odometry.child_frame_id = "world";
+    odometry.pose.pose.position.y = odom_y;
+    odometry.pose.pose.orientation.z = odom_theta;
+    pub_lane_odometry.publish(odometry);
+}
 
 void declarePublisher(int num, ros::NodeHandle &n, std::vector<ros::Publisher> &MarkerPublisher)
 {

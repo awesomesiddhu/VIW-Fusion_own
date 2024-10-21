@@ -42,7 +42,7 @@ class LineFeatureTracker
   public:
     LineFeatureTracker();
 
-    map<int, vector<Eigen::Matrix<double, 15, 1>>> readImage4Line(const Mat &_img, double _cur_time);
+    std::pair<std::map<int, std::vector<Eigen::Matrix<double, 15, 1>>>, std::vector<LineKL>> readImage4Line(const Mat &_img, double _cur_time);
     void imageUndistortion(Mat &_img, Mat &_out_undistort_img);
     void readIntrinsicParameter(const string &calib_file);
     void lineExtraction( Mat &cur_img, vector<LineKL> &_keyLine, Mat &_descriptor );

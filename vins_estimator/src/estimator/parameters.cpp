@@ -99,6 +99,8 @@ double DIST_K2;
 double DIST_P1;
 double DIST_P2;
 
+int USE_LANE;
+
 CameraExtrinsicAdjustType CAM_EXT_ADJ_TYPE;
 WheelExtrinsicAdjustType WHEEL_EXT_ADJ_TYPE;
 
@@ -492,6 +494,8 @@ void readParameters(std::string config_file)
         LINE_FACTOR = 0;
         VP_FACTOR = 0;
     }
+
+    USE_LANE = fsSettings["lane_odom"];
 
     fsSettings.release();
 }
