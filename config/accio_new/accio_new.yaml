@@ -82,6 +82,7 @@ freq: 10                # frequence (Hz) of publish tracking result. At least 10
 F_threshold: 1.0        # ransac threshold (pixel)
 show_track: 1           # publish tracking image as topic
 flow_back: 1            # perform forward and backward optical flow to improve feature tracking accuracy
+equalize: 1             # if image is too dark or light, trun on equalize to find enough features
 
 #optimization parameters
 max_solver_time: 0.04  # max solver itration time (ms), to guarantee real time
@@ -133,9 +134,9 @@ distortion_parameters:
    p1: 0.0
    p2: 0.0
 projection_parameters:
-   fx: 554.254691191187
-   fy: 554.254691191187
-   cx: 320.5 
-   cy: 240.5
+   fx: 603.420654296875
+   fy: 602.5958251953125
+   cx: 327.1630859375
+   cy: 244.07200622558594
 
 lane_odom: 1
