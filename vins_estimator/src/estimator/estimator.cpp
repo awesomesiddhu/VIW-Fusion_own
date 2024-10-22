@@ -603,6 +603,36 @@ void Estimator::processMeasurements()
         std::this_thread::sleep_for(dura);
     }
 }
+void Estimator::processLane()
+{   
+    while (1)
+    {
+        if (!latest_img.empty())
+        {
+        //cv::imshow("Latest Image", latest_img);
+        //cv::waitKey(1);
+
+        cv::Point2f src[4] = {{0, 480}, {220, 240}, {420, 240}, {640, 480}};
+        cv::Point2f dst[4] = {{170, 720}, {170, 0}, {550, 0}, {550, 720}};
+
+        ROS_INFO("Applying perspective transform...");
+        cv::Mat warp_img;
+        cv::Mat M = cv::getPerspectiveTransform(src, dst);
+        cv::Mat Minv = cv::getPerspectiveTransform(dst, src);
+        cv::warpPerspective(latest_img, warp_img, M, cv::Size(720, 720), cv::INTER_LINEAR);
+        
+        cv::imshow("Latest Image", warp_img);
+        cv::waitKey(1);
+        }
+        if (! MULTIPLE_THREAD)
+            break;
+
+        std::chrono::milliseconds dura(2);
+        std::this_thread::sleep_for(dura);
+    }
+}
+
+/*
 bool Estimator::KeyLinesAvailable(double t)
 {
     if(!keyLinesBuf.empty() && t <= keyLinesBuf.back().first)
@@ -610,6 +640,7 @@ bool Estimator::KeyLinesAvailable(double t)
     else
         return false;
 }
+
 void Estimator::processLane()
 {   
     while (1)
@@ -791,7 +822,7 @@ std::pair<double, double> Estimator::processKLs(std::vector<LineKL> KLs, double 
     }
 
 }
-
+*/
 
 //利用重力信息，初始化最开始状态中的旋转矩阵
 void Estimator::initFirstIMUPose(vector<pair<double, Eigen::Vector3d>> &accVector)

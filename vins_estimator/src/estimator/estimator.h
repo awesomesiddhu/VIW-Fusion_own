@@ -239,6 +239,7 @@ class Estimator
     bool initThreadFlag;
 
     cv::Mat latest_img;
+    double latest_img_time;
 
     std::thread processLaneThread;
     void processLane();

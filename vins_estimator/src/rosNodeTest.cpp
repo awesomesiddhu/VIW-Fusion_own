@@ -124,6 +124,7 @@ void sync_process()
             if(!image.empty()){
                 estimator.inputImage(time, image);
                 estimator.latest_img = image;
+                estimator.latest_img_time = time;
             }
         }
 
